@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <View
+        android:id="@+id/midline"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:layout_centerInParent="true" />
+
+    <TextView
+        android:id="@+id/totalCoinsText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/coinImage"
+        android:layout_alignLeft="@+id/coinImage"
+        android:layout_alignRight="@+id/coinImage"
+        android:text="Total"
+        android:textColor="@color/white" />
+
+    <ImageView
+        android:id="@+id/coinImage"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_centerVertical="true"
+        android:layout_toLeftOf="@+id/midline"
+        android:src="@drawable/coins_draft" />
+
+    <TextView
+        android:id="@+id/coinCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toRightOf="@+id/midline"
+        android:textColor="@color/white"
+        android:textSize="52sp" />
+
+</RelativeLayout>

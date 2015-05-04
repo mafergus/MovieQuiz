@@ -1,0 +1,54 @@
+<html>
+<head>
+<script type="text/javascript"
+	src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<script type="text/javascript"
+	src="http://www.parsecdn.com/js/parse-1.3.0.min.js"></script>
+<!-- include css file here-->
+<link rel="stylesheet" href="css/form.css" />
+
+</head>
+<body>
+
+	<div id="main">
+		<h1>Add Movie</h1>
+
+		<form id="form_id" method="post" name="myform">
+<!-- 			<button type="button" class="button-success pure-button"
+				onclick="populateMovies()" style="height: 20dp;">Populate</button> -->
+			<br><br> <label>Search: </label> <br>
+			<textarea id="searchBox" name="searchBox"></textarea>
+			<br>
+			<button type="button" class="button-success pure-button"
+				onclick="searchMovie()" style="height: 50px;">Search</button>
+			<br> <br> <br> <label>Movie: </label>
+			<textarea id="movieTitle" name="movieTitle"></textarea>
+			<br> <br>
+			<ul name="photos" id="photos">
+			</ul>
+
+			<!--
+			<br> <br> <label>Photo: </label> <br> <input
+				type="file" id="correctPhoto" onchange="previewFile()"><br>
+			<img id="correctImage" src="" height="200" alt="Image preview...">
+			<br> <br> <label>Correct Photo 1: </label><br> <input
+				type="file" id="wrongPhoto1" onchange="previewFile1()"><br>
+			<img id="wrongImage1" src="" height="200" alt="Image preview...">
+			<br> <br> <label>Correct Photo 2: </label><br> <input
+				type="file" id="wrongPhoto2" onchange="previewFile2()"><br>
+			<img id="wrongImage2" src="" height="200" alt="Image preview...">
+			<br> <br> <label>Correct Photo 3: </label><br> <input
+				type="file" id="wrongPhoto3" onchange="previewFile3()"><br>
+			<img id="wrongImage3" src="" height="200" alt="Image preview..."><br>
+			<br>
+ -->
+			<button type="button" class="button-success pure-button"
+				onclick="submitMovies()" style="height: 50px; width: 200px">Submit</button>
+		</form>
+	</div>
+
+	<!-- include JavaScript file here -->
+	<script src="submit.js"></script>
+
+</body>
+</html>

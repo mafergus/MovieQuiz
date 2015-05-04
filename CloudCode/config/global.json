@@ -1,0 +1,14 @@
+{
+    "applications": {
+        "Character Quiz": {
+            "applicationId": "UFj25hlpaoyfnC2w9sPUcxynB1tfxEtoP2uexm9W", 
+            "masterKey": "tXA3dj3qwp0y9wlsboIbtbBHEYI3WCnnY0AotL1S"
+        }, 
+        "_default": {
+            "link": "Character Quiz"
+        }
+    }, 
+    "global": {
+        "parseVersion": "1.4.2"
+    }
+}

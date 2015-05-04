@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" >
+
+    <TextView
+        android:id="@+id/timerCounterTextViewLeft"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toLeftOf="@+id/timerCounterTextViewPoint"
+        android:textColor="@android:color/black"
+        android:textSize="24sp" />
+
+    <TextView
+        android:id="@+id/timerCounterTextViewPoint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:text="."
+        android:textColor="@android:color/black"
+        android:textSize="24sp" />
+
+    <TextView
+        android:id="@+id/timerCounterTextViewRight"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@+id/timerCounterTextViewPoint"
+        android:textColor="@android:color/black"
+        android:textSize="24sp" >
+    </TextView>
+
+</RelativeLayout>
