@@ -11,29 +11,32 @@
 <body>
 
 	<div id="main">
-		<h1>Add Movie</h1>
+		<h1>Add Level</h1>
 
 		<form id="form_id" method="post" name="myform">
-<!-- 			<button type="button" class="button-success pure-button"
+			<!-- 			<button type="button" class="button-success pure-button"
 				onclick="populateMovies()" style="height: 20dp;">Populate</button> -->
-			<br><br> <label>Search: </label> <br>
+			<labelsmall>Level Name</labelsmall>
+			<input type="text" id="levelName"></input><br>
+			<labelsmall>Level Number</labelsmall>
+			<input type="text" id="levelId"></input><br> <br> <label>Add
+				Movie (CASE SENSITIVE!!): </label> <br>
 			<textarea id="searchBox" name="searchBox"></textarea>
 			<br>
 			<button type="button" class="button-success pure-button"
 				onclick="searchMovie()" style="height: 50px;">Search</button>
-			<br> <br> <br> <label>Movie: </label>
-			<textarea id="movieTitle" name="movieTitle"></textarea>
 			<br> <br>
-			<ul name="photos" id="photos">
-			</ul>
-
+			<ol type="1" id="movieList">
+			</ol>
+			<br>
+			<br>
 			<button type="button" class="button-success pure-button"
-				onclick="submitMovies()" style="height: 50px; width: 200px">Submit</button>
+				onclick="submitLevel()" style="height: 50px; width: 200px">Submit</button>
 		</form>
 	</div>
 
 	<!-- include JavaScript file here -->
-	<script src="submit.js"></script>
+	<script src="addLevel.js"></script>
 
 </body>
 </html>

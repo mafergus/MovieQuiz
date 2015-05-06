@@ -13,5 +13,6 @@
 	<classpathentry kind="lib" path="libs/listviewanimations_lib-core_3.1.0.jar"/>
 	<classpathentry kind="lib" path="libs/listviewanimations_lib-manipulation_3.1.0.jar"/>
 	<classpathentry kind="lib" path="libs/listviewanimations_lib-core-slh_3.1.0.jar"/>
+	<classpathentry kind="lib" path="libs/volley.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

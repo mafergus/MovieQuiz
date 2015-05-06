@@ -26,39 +26,6 @@ public class MovieQuizApplication extends Application {
 	public void onCreate() {
 		super.onCreate();
 
-		Parse.enableLocalDatastore(this);
-		Parse.initialize(this, "UFj25hlpaoyfnC2w9sPUcxynB1tfxEtoP2uexm9W", "IkFZkVf6t72EfabEUa2YFMSXj8zY1dEiZXn61m49");
-		//		ParseFacebookUtils.initialize("525166447618020");
-		ParseUser.enableAutomaticUser();
-		ParseUser.logInInBackground(MovieQuizApplication.id(getApplicationContext()), "", new LogInCallback() {
-
-			@Override
-			public void done(ParseUser arg0, ParseException arg1) {
-				if (arg0 == null) {
-					Log.v("MNF", "exception logging in " + arg1.toString());
-					ParseUser user = new ParseUser();
-					user.setUsername(MovieQuizApplication.id(getApplicationContext()));
-					user.setPassword("");
-					user.put("displayName", "Anonymous User");
-
-					user.signUpInBackground(new SignUpCallback() {
-						public void done(ParseException e) {
-							if (e == null) {
-								Log.v("MNF", "new user created");
-								// Hooray! Let them use the app now.
-							} else {
-								// Sign up didn't succeed. Look at the ParseException
-								// to figure out what went wrong
-								Log.v("MNF", "sign up failed");
-							}
-						}
-					});
-				} else {
-					Log.v("MNF", "Parse User logged in " + arg0.getUsername());
-				}
-			}
-		});
-		
 		loadTotalPoints();
 
 		//		fontBold = Typeface.createFromAsset(getAssets(), "JosefinSans-Bold.ttf");

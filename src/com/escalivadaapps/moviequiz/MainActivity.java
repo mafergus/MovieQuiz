@@ -1,13 +1,23 @@
 package com.escalivadaapps.moviequiz;
 
+
+import java.util.List;
+
 import android.app.Activity;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Looper;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,11 +26,15 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
 
-import com.escalivadaapps.moviequiz.R;
+import com.escalivadaapps.moviequiz.service.Level;
+import com.escalivadaapps.moviequiz.service.Movie;
+import com.escalivadaapps.moviequiz.service.MovieService;
+import com.escalivadaapps.moviequiz.service.MovieService.MyLocalBinder;
 
 
 public class MainActivity extends ActionBarActivity
 implements NavigationDrawerFragment.NavigationDrawerCallbacks {
+	final static String TAG = MainActivity.class.getCanonicalName();
 
 	/**
 	 * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
@@ -31,6 +45,24 @@ implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 	 * Used to store the last screen title. For use in {@link #restoreActionBar()}.
 	 */
 	private CharSequence mTitle;
+	
+	protected MovieService movieService;
+	protected ServiceConnection myConnection = new ServiceConnection() {
+
+		public void onServiceConnected(ComponentName className, IBinder service) {
+			MyLocalBinder binder = (MyLocalBinder) service;
+			movieService = binder.getService();
+			new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+				
+				@Override
+				public void run() {
+					showAll();					
+				}
+			}, 1000*30);
+		}
+		public void onServiceDisconnected(ComponentName arg0) {}
+	};
+
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +77,29 @@ implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 		mNavigationDrawerFragment.setUp(
 				R.id.navigation_drawer,
 				(DrawerLayout) findViewById(R.id.drawer_layout));
+		
+		Intent intent = new Intent(this, MovieService.class);
+		bindService(intent, myConnection, Context.BIND_AUTO_CREATE);
+	}
+	
+	private void showAll() {
+		List<Level> levels = movieService.getLevels();
+		for (Level l : levels) {
+			List<Movie> movies = l.movies;
+			for (Movie m : movies) {
+				List<String> urls = m.imageUrls;
+				for (String s : urls) {
+					Log.v(TAG, "" + movieService.isCached(s) + " level " + l.levelId + " " + l.name + " " + m.title + " " + s);
+				}
+			}
+		}
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		
+		unbindService(myConnection);
 	}
 
 	@Override

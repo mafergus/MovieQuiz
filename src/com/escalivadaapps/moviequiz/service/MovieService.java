@@ -16,12 +16,22 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.Response.Listener;
+import com.android.volley.toolbox.ImageLoader;
+import com.android.volley.toolbox.ImageRequest;
+import com.android.volley.toolbox.Volley;
+import com.escalivadaapps.moviequiz.MovieQuizApplication;
 import com.escalivadaapps.moviequiz.R;
 import com.parse.CountCallback;
 import com.parse.FindCallback;
+import com.parse.LogInCallback;
+import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
+import com.parse.ParseUser;
+import com.parse.SignUpCallback;
 
 public class MovieService extends Service {
 	final static private String TAG = MovieService.class.getCanonicalName();
@@ -30,6 +40,11 @@ public class MovieService extends Service {
 	private final IBinder myBinder = new MyLocalBinder();
 
 	private Map< MovieData, List<String> > movieMap = new HashMap<MovieData, List<String> >();
+	private List<Level> levels = new ArrayList<Level>();
+
+	private ImageLoader imageLoader;
+	private RequestQueue requestQueue;
+	private LruBitmapCache bitmapCache;
 
 	@Override
 	public IBinder onBind(Intent arg0) {
@@ -53,18 +68,113 @@ public class MovieService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		Log.v(TAG, "onCreate()");
 
 		final SharedPreferences prefs = getSharedPreferences(getPackageName(), MODE_PRIVATE); 
 		boolean hasLoadedQuestions = prefs.getBoolean("hasLoadedQuestions", false);
 
-		//		new Handler().post(new Runnable() {
-		//
-		//			@Override
-		//			public void run() {
-		//				loadGames();
-		//				new Handler().postDelayed(this, UPDATE_GAMES_INTERVAL);
-		//			}
-		//		});
+		Parse.initialize(this, "UFj25hlpaoyfnC2w9sPUcxynB1tfxEtoP2uexm9W", "IkFZkVf6t72EfabEUa2YFMSXj8zY1dEiZXn61m49");
+		//		ParseFacebookUtils.initialize("525166447618020");
+		ParseUser.enableAutomaticUser();
+		ParseUser.logInInBackground(MovieQuizApplication.id(getApplicationContext()), "", new LogInCallback() {
+
+			@Override
+			public void done(ParseUser arg0, ParseException arg1) {
+				if (arg0 == null) {
+					Log.v("MNF", "exception logging in " + arg1.toString());
+					ParseUser user = new ParseUser();
+					user.setUsername(MovieQuizApplication.id(getApplicationContext()));
+					user.setPassword("");
+					user.put("displayName", "Anonymous User");
+
+					user.signUpInBackground(new SignUpCallback() {
+						public void done(ParseException e) {
+							if (e == null) {
+								Log.v("MNF", "new user created");
+								loadAll();
+								// Hooray! Let them use the app now.
+							} else {
+								// Sign up didn't succeed. Look at the ParseException
+								// to figure out what went wrong
+								Log.v("MNF", "sign up failed");
+							}
+						}
+					});
+				} else {
+					Log.v("MNF", "Parse User logged in " + arg0.getUsername());
+					loadAll();
+				}
+			}
+		});
+
+		bitmapCache = new LruBitmapCache(this);
+		requestQueue = Volley.newRequestQueue(getApplicationContext());
+		imageLoader = new ImageLoader(requestQueue, bitmapCache);
+	}
+
+	private void loadAll() {
+		ParseQuery<ParseObject> query = ParseQuery.getQuery("Level");
+		query.setLimit(NUM_TO_LOAD);
+		query.findInBackground(new FindCallback<ParseObject>() {
+
+			@Override
+			public void done(List<ParseObject> parseObjs, ParseException e) {
+				if (e == null) {
+					Log.v(TAG, "loaded levels");
+					for (final ParseObject level : parseObjs) {
+						level.getRelation("movies").getQuery().findInBackground(new FindCallback<ParseObject>() {
+							public void done(List<ParseObject> results, ParseException e) {
+								if (e != null) {
+									// There was an error
+								} else {
+									final List<Movie> movies = new ArrayList<Movie>();
+									for (final ParseObject movie : results) {
+										ParseQuery<ParseObject> movieImageQuery = ParseQuery.getQuery("MovieImage");
+										movieImageQuery.whereEqualTo("parent", movie);
+										movieImageQuery.findInBackground(new FindCallback<ParseObject>() {
+
+											@Override
+											public void done(List<ParseObject> parseObjs, ParseException e) {
+												if (e == null) {
+													List<String> urls = new ArrayList<String>();
+													for (final ParseObject movieImage : parseObjs) {
+														urls.add(movieImage.getString("url"));
+														Log.v(TAG, "" + movie.getString("title") + " " + movieImage.getString("url"));
+														ImageRequest imgRequest = new ImageRequest(movieImage.getString("url"), 
+																new Listener<Bitmap>() {
+
+															@Override
+															public void onResponse(Bitmap bmp) {
+																Log.v(TAG, "loaded bmp " + movie.getString("title"));
+																bitmapCache.putBitmap(movieImage.getString("url"), bmp);
+															}
+														}, 0, 0, null, null);
+														requestQueue.add(imgRequest);
+													}
+													Movie m = new Movie(movie.getInt("mdid"), movie.getString("title"), urls);
+													movies.add(m);
+													requestQueue.start();
+												}
+											}
+										});
+									}
+									Level l = new Level(level.getInt("levelNumber"), level.getString("name"), movies);
+									levels.add(l);
+								}
+							}
+						});
+					}
+				}
+			}
+		});
+	}
+	
+	public boolean isCached(String url) {
+		return (bitmapCache.get(url) == null ? false : true);
+	}
+	
+	public List<Level> getLevels() {
+		return levels;
 	}
 
 	public Map<Integer, Drawable> getMovieQuestions(int count) {
@@ -132,11 +242,9 @@ public class MovieService extends Service {
 			@Override
 			public void done(List<ParseObject> objList, ParseException arg1) {
 				if (arg1 == null) {
-					List<String> movieImages = movieMap.get(new MovieData(movie.getInt("mdId")));
 					for (ParseObject movieImage : objList) {
-						movieImages.add(movieImage.getString("url"));
+						imageLoader.get(movieImage.getString("url"), null);
 					}
-					//					new DownloadTask(parseObject.getInt("mdId")).execute(movieImage.getString("url"));
 				}
 			}
 		});

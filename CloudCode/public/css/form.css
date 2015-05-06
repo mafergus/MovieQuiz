@@ -55,6 +55,11 @@ label {
 	font-size: 30px;
 }
 
+labelsmall {
+	float: left;
+	font-size: 20px;
+}
+
 input[type="text"] {
 	width: 100%;
 	margin-top: 10px;
@@ -94,6 +99,44 @@ input[type="submit"] {
 	font-weight: bold;
 	cursor: pointer;
 	font-family: 'Ubuntu', sans-serif;
+}
+
+ul {
+	list-style-type: circle;
+	width: 500px;
+}
+
+h3 {
+	font: bold 20px/1.5 Helvetica, Verdana, sans-serif;
+}
+
+li img {
+	float: left;
+	margin: 0 15px 0 0;
+}
+
+li button {
+	position: absolute;
+	top: 50%;
+	right: 0%;
+	width: 100px;
+	margin: -25px 10px 0 0;
+	height: 50px
+}
+
+li p {
+	font: 200 12px/1.5 Georgia, Times New Roman, serif;
+}
+
+li {
+	position: relative;
+	padding: 10px;
+	overflow: auto;
+}
+
+li:hover {
+	background: #eee;
+	cursor: pointer;
 }
 
 /* -------------------------------------
@@ -170,6 +213,6 @@ div#fugo {
 }
 /* accessibility */
 [type="checkbox"]:checked:focus+label:before,[type="checkbox"]:not (:checked
-	):focus+label:before {
+	 ):focus+label:before {
 	border: 1px dotted blue;
 }
