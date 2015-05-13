@@ -6,21 +6,24 @@ import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.graphics.Bitmap;
 import android.graphics.Typeface;
-import android.util.Log;
 
-import com.parse.LogInCallback;
-import com.parse.Parse;
-import com.parse.ParseException;
-import com.parse.ParseUser;
-import com.parse.SignUpCallback;
+import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
 
 public class MovieQuizApplication extends Application {
+	final private static String TAG = MovieQuizApplication.class.getCanonicalName(); 
 	final private static String TOTAL_POINTS_KEY = "total_coins_key";
 	private int totalPoints = 0;
 	private Typeface fontRegular;
 	private Typeface fontBold;
 	private Typeface scoreFont;
+
+	private DisplayImageOptions imageOptions;
 
 	@Override
 	public void onCreate() {
@@ -28,9 +31,44 @@ public class MovieQuizApplication extends Application {
 
 		loadTotalPoints();
 
-		//		fontBold = Typeface.createFromAsset(getAssets(), "JosefinSans-Bold.ttf");
-		//		fontRegular = Typeface.createFromAsset(getAssets(), "JosefinSans-Regular.ttf");
-		//		scoreFont = Typeface.createFromAsset(getAssets(), "open_24_display.ttf");
+		fontBold = Typeface.createFromAsset(getAssets(), "sfmovieposterbolditalic.ttf");
+		fontRegular = Typeface.createFromAsset(getAssets(), "sfmovieposterbolditalic.ttf");
+		scoreFont = Typeface.createFromAsset(getAssets(), "sfmovieposterbolditalic.ttf");
+
+		imageOptions = new DisplayImageOptions.Builder()
+		.showImageOnLoading(R.drawable.ic_launcher)
+		.showImageForEmptyUri(R.drawable.ic_launcher)
+		.showImageOnFail(R.drawable.ic_launcher)
+		.cacheInMemory(true)
+		.cacheOnDisk(true)
+		.considerExifParams(true)
+		.bitmapConfig(Bitmap.Config.RGB_565)
+		.build();
+
+		initImageLoader(getApplicationContext());
+	}
+
+	public static void initImageLoader(Context context) {
+		// This configuration tuning is custom. You can tune every option, you may tune some of them,
+		// or you can create default configuration by
+		//  ImageLoaderConfiguration.createDefault(this);
+		// method.
+		ImageLoaderConfiguration.Builder config = new ImageLoaderConfiguration.Builder(context);
+		config.threadPriority(Thread.NORM_PRIORITY - 2);
+		config.denyCacheImageMultipleSizesInMemory();
+		config.diskCacheFileNameGenerator(new Md5FileNameGenerator());
+		config.diskCacheSize(50 * 1024 * 1024); // 50 MiB
+		config.tasksProcessingOrder(QueueProcessingType.LIFO);
+		config.writeDebugLogs(); // Remove for release app
+		config.diskCacheExtraOptions(500, 281, null);
+		config.memoryCacheExtraOptions(500, 281);
+
+		// Initialize ImageLoader with configuration.
+		ImageLoader.getInstance().init(config.build());
+	}
+
+	public DisplayImageOptions getImageOptions() {
+		return imageOptions;
 	}
 
 	//Should be some sort of S-curve function

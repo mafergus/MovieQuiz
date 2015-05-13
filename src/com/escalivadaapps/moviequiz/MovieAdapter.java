@@ -38,6 +38,11 @@ public class MovieAdapter extends ArrayAdapter<MovieImage> {
 		notifyDataSetChanged();
 	}
 
+	@Override
+	public MovieImage getItem(int position) {
+		return data.get(position);
+	}
+
 	public void clear() {
 		data.clear();
 		notifyDataSetInvalidated();
@@ -63,7 +68,7 @@ public class MovieAdapter extends ArrayAdapter<MovieImage> {
 		ImageRow imageRow = ((ImageRow)row);
 
 		MovieImage itemdata = data.get(position);
-		holder.image.setImageDrawable(itemdata.drawable);
+		holder.image.setImageBitmap(itemdata.drawable);
 		holder.overlay.setBackgroundColor(context.getResources().getColor(getColorResId(position)));
 		Log.v(TAG, "position " + position + " height " + imageRow.getMyHeight());
 

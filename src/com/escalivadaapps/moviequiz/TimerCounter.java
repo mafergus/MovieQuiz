@@ -54,10 +54,6 @@ public class TimerCounter {
 		new Handler(Looper.getMainLooper()).removeCallbacks(runnable);
 	}
 	
-	public void reset() {
-		
-	}
-	
 	public boolean isRunning() { 
 		return isRunning;
 	}

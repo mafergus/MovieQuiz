@@ -20,13 +20,22 @@
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="10dp"
         android:layout_marginTop="10dp"
-        android:background="#444444"
         android:gravity="center"
-        android:textSize="24sp"
+        android:textSize="32sp"
         android:color="@color/white" />
 
     <com.escalivadaapps.moviequiz.AnswerList
         android:id="@+id/answerList"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentBottom="true"
+        android:layout_below="@+id/timer"
+        swipe:swipeBackView="@+id/back"
+        swipe:swipeFrontView="@+id/front"
+        swipe:swipeMode="right" />
+
+    <com.escalivadaapps.moviequiz.AnswerList
+        android:id="@+id/overlayList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_alignParentBottom="true"
@@ -43,7 +52,8 @@
         android:layout_alignLeft="@+id/answerList"
         android:layout_alignRight="@+id/answerList"
         android:layout_alignTop="@+id/answerList"
-        android:orientation="vertical" >
+        android:orientation="vertical"
+        android:visibility="gone" >
 
         <RelativeLayout
             android:id="@+id/overlayChild1"

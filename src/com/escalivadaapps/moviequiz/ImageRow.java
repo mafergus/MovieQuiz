@@ -11,8 +11,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
-import com.escalivadaapps.moviequiz.R;
-
 public class ImageRow extends FrameLayout {
 	private static final String TAG = ImageView.class.getCanonicalName();
 	private int height = 0;

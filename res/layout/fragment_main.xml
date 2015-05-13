@@ -8,11 +8,4 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.escalivadaapps.moviequiz.MainActivity$PlaceholderFragment" >
 
-    <Button
-        android:id="@+id/newGameButton"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:text="New Game"
-        android:layout_centerInParent="true" />
-
 </RelativeLayout>

@@ -46,8 +46,10 @@ public class GameTimer extends RelativeLayout {
 		timerProgress.setProgress(0);
 	}
 
-	public void init(int startTimeMs) {
+	public void init(long startTimeMs) {
 		this.startTimeMs = startTimeMs;
+		this.elapsedTimeMs = 0;
+		this.totalRunTimeMs = 0;
 		setProgress(0);
 		timerCounter = new TimerCounter(TICK_INTERVAL_MS, new TickCallback() {
 
@@ -67,7 +69,7 @@ public class GameTimer extends RelativeLayout {
 									callback.onEnded(totalRunTimeMs);
 								}
 								stop();
-								setProgress(0);
+								setProgress(100);
 							} else {
 								updateProgress();
 							}
@@ -95,6 +97,12 @@ public class GameTimer extends RelativeLayout {
 		}
 	}
 	
+	public void reset() {
+		if (timerCounter != null) {
+			init(this.startTimeMs);
+		}
+	}
+	
 	public int getProgress() {
 		return timerProgress.getProgress();
 	}
@@ -107,11 +115,11 @@ public class GameTimer extends RelativeLayout {
 		double percentage = ((double)GameTimer.this.elapsedTimeMs / (double)GameTimer.this.startTimeMs) * 100.0;
 		int perc = (int)percentage;
 		timerProgress.setProgress(100-perc);
-		timerProgress.setSecondaryProgress(100-perc+5);
+//		timerProgress.setSecondaryProgress(100-perc+5);
 	}
 
 	private void setProgress(int percent) {
 		timerProgress.setProgress(100-percent);
-		timerProgress.setSecondaryProgress(100-percent+5);
+//		timerProgress.setSecondaryProgress(100-percent+5);
 	}
 }

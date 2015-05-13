@@ -1,12 +1,12 @@
 package com.escalivadaapps.moviequiz;
 
-import android.graphics.drawable.Drawable;
+import android.graphics.Bitmap;
 
 public class MovieImage {
-	public Drawable drawable;
+	public Bitmap drawable;
 	public int movieId;
 
-	public MovieImage(final Drawable d, int movieId) {
+	public MovieImage(final Bitmap d, int movieId) {
 		this.drawable = d;
 		this.movieId = movieId;
 	}

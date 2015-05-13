@@ -1,28 +1,30 @@
 package com.escalivadaapps.moviequiz.service;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 
-import com.android.volley.RequestQueue;
-import com.android.volley.Response.Listener;
-import com.android.volley.toolbox.ImageLoader;
-import com.android.volley.toolbox.ImageRequest;
-import com.android.volley.toolbox.Volley;
 import com.escalivadaapps.moviequiz.MovieQuizApplication;
-import com.escalivadaapps.moviequiz.R;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nostra13.universalimageloader.core.ImageLoader;
 import com.parse.CountCallback;
 import com.parse.FindCallback;
 import com.parse.LogInCallback;
@@ -35,16 +37,15 @@ import com.parse.SignUpCallback;
 
 public class MovieService extends Service {
 	final static private String TAG = MovieService.class.getCanonicalName();
+	final static public String LEVEL_BROADCAST_FILTER = "newlevelbroadcast";
+	final static private int LEVEL_UPDATED_INTERVAL = 5 * 60 * 1000;
 	final static private int NUM_TO_LOAD = 1000;
 
+	final public ObjectMapper mapper = new ObjectMapper();
 	private final IBinder myBinder = new MyLocalBinder();
 
 	private Map< MovieData, List<String> > movieMap = new HashMap<MovieData, List<String> >();
 	private List<Level> levels = new ArrayList<Level>();
-
-	private ImageLoader imageLoader;
-	private RequestQueue requestQueue;
-	private LruBitmapCache bitmapCache;
 
 	@Override
 	public IBinder onBind(Intent arg0) {
@@ -106,94 +107,223 @@ public class MovieService extends Service {
 				}
 			}
 		});
-
-		bitmapCache = new LruBitmapCache(this);
-		requestQueue = Volley.newRequestQueue(getApplicationContext());
-		imageLoader = new ImageLoader(requestQueue, bitmapCache);
+		
+		loadCachedLevels();
+	}
+	
+	public void loadCachedLevels() {
+		Log.v(TAG, "Loading cached level");
+		SharedPreferences prefs = getSharedPreferences(getPackageName()+"prefs", Context.MODE_PRIVATE);
+		String storedGames = prefs.getString(getPackageName()+"prefs"+"levels", null);
+		if (storedGames != null && levels.isEmpty()) {
+			try {
+				Level[] storedLevels = mapper.readValue(storedGames, Level[].class);
+				levels.clear();
+				for (Level l : storedLevels) {
+					levels.add(l);
+					Log.v(TAG, l.toString());
+				}
+				sendLevelBroadcast();
+			} catch (JsonParseException e) {
+				e.printStackTrace();
+			} catch (JsonMappingException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
-	private void loadAll() {
-		ParseQuery<ParseObject> query = ParseQuery.getQuery("Level");
-		query.setLimit(NUM_TO_LOAD);
-		query.findInBackground(new FindCallback<ParseObject>() {
+	public void storeCachedLevels() {
+		Log.v(TAG, "Storing level games");
+		SharedPreferences prefs = getSharedPreferences(getPackageName()+"prefs", Context.MODE_PRIVATE);
+		try {
+			String levelsJson = mapper.writeValueAsString(levels);
+			Log.v(TAG, levelsJson);
+			SharedPreferences.Editor editor = prefs.edit();
+			editor.putString(getPackageName()+"prefs"+"levels", levelsJson);
+			editor.commit();
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
+	}
 
-			@Override
-			public void done(List<ParseObject> parseObjs, ParseException e) {
-				if (e == null) {
-					Log.v(TAG, "loaded levels");
-					for (final ParseObject level : parseObjs) {
-						level.getRelation("movies").getQuery().findInBackground(new FindCallback<ParseObject>() {
-							public void done(List<ParseObject> results, ParseException e) {
-								if (e != null) {
-									// There was an error
-								} else {
-									final List<Movie> movies = new ArrayList<Movie>();
-									for (final ParseObject movie : results) {
-										ParseQuery<ParseObject> movieImageQuery = ParseQuery.getQuery("MovieImage");
-										movieImageQuery.whereEqualTo("parent", movie);
-										movieImageQuery.findInBackground(new FindCallback<ParseObject>() {
+	static public interface LoadCallback<T> {
+		public void onLoad(final T obj);
+		public void onError();
+	}
 
-											@Override
-											public void done(List<ParseObject> parseObjs, ParseException e) {
-												if (e == null) {
-													List<String> urls = new ArrayList<String>();
-													for (final ParseObject movieImage : parseObjs) {
-														urls.add(movieImage.getString("url"));
-														Log.v(TAG, "" + movie.getString("title") + " " + movieImage.getString("url"));
-														ImageRequest imgRequest = new ImageRequest(movieImage.getString("url"), 
-																new Listener<Bitmap>() {
+	class LoadMovieRequest {
+		final private LoadCallback<Movie> callback;
+		final private ParseObject movieObj;
+		public LoadMovieRequest(final ParseObject movieObj, final LoadCallback<Movie> callback) {
+			this.movieObj = movieObj;
+			this.callback = callback;
+		}
+		public void load() {
+			ParseQuery<ParseObject> movieImageQuery = ParseQuery.getQuery("MovieImage");
+			movieImageQuery.whereEqualTo("parent", movieObj);
+			movieImageQuery.findInBackground(new FindCallback<ParseObject>() {
 
-															@Override
-															public void onResponse(Bitmap bmp) {
-																Log.v(TAG, "loaded bmp " + movie.getString("title"));
-																bitmapCache.putBitmap(movieImage.getString("url"), bmp);
-															}
-														}, 0, 0, null, null);
-														requestQueue.add(imgRequest);
-													}
-													Movie m = new Movie(movie.getInt("mdid"), movie.getString("title"), urls);
-													movies.add(m);
-													requestQueue.start();
-												}
-											}
-										});
-									}
-									Level l = new Level(level.getInt("levelNumber"), level.getString("name"), movies);
-									levels.add(l);
-								}
-							}
-						});
+				@Override
+				public void done(List<ParseObject> parseObjs, ParseException e) {
+					if (e == null) {
+						List<String> urls = new ArrayList<String>();
+						for (final ParseObject movieImage : parseObjs) {
+							urls.add(movieImage.getString("url"));
+							Log.v(TAG, "" + movieObj.getString("title") + " " + movieImage.getString("url"));
+							//							ImageLoader.getInstance().loadImage(movieImage.getString("url"), 
+							//									((MovieQuizApplication)getApplicationContext()).getImageOptions(), null);
+						}
+						Movie m = new Movie(movieObj.getInt("mdId"), movieObj.getString("title"), urls);
+						callback.onLoad(m);
+					} else {
+						callback.onError();
 					}
 				}
+			});
+		}
+	}
+
+	class LoadLevelRequest {
+		final private LoadCallback<Level> callback;
+		final private ParseObject levelObj;
+		private int count = 0;
+		private int completed = 0;
+		private List<Movie> movies = new ArrayList<Movie>();
+		public LoadLevelRequest(final ParseObject levelObj, final LoadCallback<Level> callback) { 
+			this.levelObj = levelObj;
+			this.callback = callback;
+		}
+		public void load() {
+			levelObj.getRelation("movies").getQuery().findInBackground(new FindCallback<ParseObject>() {
+
+				public void done(List<ParseObject> results, ParseException e) {
+					if (e != null) {
+						callback.onError();
+					} else {
+						count = results.size();
+						for (final ParseObject movie : results) {
+							LoadMovieRequest movieRequest = new LoadMovieRequest(movie, new LoadCallback<Movie>() {
+
+								@Override
+								public void onLoad(Movie obj) {
+									Log.v(TAG, "LoadMovieRequest loaded Movie " + movie.getString("title"));
+									movies.add(obj);
+									completed++;
+									if (completed == count) {
+										final Level l = new Level(levelObj.getObjectId(), levelObj.getInt("levelNumber"), 
+												levelObj.getString("name"), movies);
+										callback.onLoad(l);
+									}
+								}
+
+								@Override
+								public void onError() { Log.v(TAG, "Failed to load movie request"); callback.onError(); }
+							});
+							movieRequest.load();
+						}
+					}
+				}
+			});
+		}
+	}
+
+	private List<Level> tempLevels = new ArrayList<Level>();
+
+	private void loadAll() {
+		new Handler(Looper.getMainLooper()).post(new Runnable() {
+
+			@Override
+			public void run() {
+
+				ParseQuery<ParseObject> query = ParseQuery.getQuery("Level");
+				query.setLimit(NUM_TO_LOAD);
+				query.findInBackground(new FindCallback<ParseObject>() {
+
+					@Override
+					public void done(List<ParseObject> parseObjs, ParseException e) {
+						if (e == null) {
+							Log.v(TAG, "loaded levels");
+							tempLevels.clear();
+							final int count = parseObjs.size();
+							for (final ParseObject level : parseObjs) {
+								LoadLevelRequest levelRequest = new LoadLevelRequest(level, new LoadCallback<Level>() {
+
+									@Override
+									public void onLoad(Level obj) {
+										tempLevels.add(obj);
+										if (tempLevels.size() == count) {
+											List<Level> sortedTempLevels = new ArrayList<Level>(tempLevels);
+											List<Level> sortedLevels = new ArrayList<Level>(levels);
+											Collections.sort(sortedTempLevels, new Level.LevelComparator());
+											Collections.sort(sortedLevels, new Level.LevelComparator());
+											if (sortedTempLevels.equals(sortedLevels)) {
+												Log.v(TAG, "LEVELS ARE THE SAME NOTTTTTTT SENDING BROADCAST!");
+											} else {
+												Log.v(TAG, "LEVELS HAVE YESSSSS CHANGED SENDING BROADCAST!!!!");
+												levels = new ArrayList<Level>(tempLevels);
+												storeCachedLevels();
+												sendLevelBroadcast();
+											}
+										}
+									}
+
+									@Override
+									public void onError() { 
+										Log.v(TAG, "Failed to load level " + level.getString("name"));
+									}
+								});
+								levelRequest.load();
+							}
+						}
+					}
+				});
+
+				new Handler(Looper.getMainLooper()).postDelayed(this, LEVEL_UPDATED_INTERVAL);
 			}
 		});
 	}
-	
-	public boolean isCached(String url) {
-		return (bitmapCache.get(url) == null ? false : true);
+
+	private void sendLevelBroadcast() {
+		Intent levelBroadcast = new Intent();
+		levelBroadcast.setAction(LEVEL_BROADCAST_FILTER);
+		sendBroadcast(levelBroadcast);
 	}
-	
+
+	public boolean isCached(String url) {
+		Bitmap bmp = ImageLoader.getInstance().getMemoryCache().get(url);
+		File other = ImageLoader.getInstance().getDiskCache().get(url);
+		if (bmp == null && other == null) {
+			return false;
+		} else {
+			return true;			
+		}
+	}
+
 	public List<Level> getLevels() {
 		return levels;
 	}
 
-	public Map<Integer, Drawable> getMovieQuestions(int count) {
-		Map<Integer, Drawable> movieMap = new HashMap<Integer, Drawable>();
-		Bitmap d1 = BitmapFactory.decodeResource(getResources(), R.drawable.frame1);
-		BitmapDrawable bd1 = new BitmapDrawable(d1);
-		Bitmap d2 = BitmapFactory.decodeResource(getResources(), R.drawable.frame2);
-		BitmapDrawable bd2 = new BitmapDrawable(d2);
-		Bitmap d3 = BitmapFactory.decodeResource(getResources(), R.drawable.frame3);
-		BitmapDrawable bd3 = new BitmapDrawable(d3);
-		Bitmap d4 = BitmapFactory.decodeResource(getResources(), R.drawable.frame4);
-		BitmapDrawable bd4 = new BitmapDrawable(d4);
+	public Level getLevelById(String id) {
+		for (Level l : levels) {
+			if (l.objectId.equals(id)) {
+				return l;
+			}
+		}
+		return null;
+	}
 
-		movieMap.put(1, bd1);
-		movieMap.put(2, bd2);
-		movieMap.put(3, bd3);
-		movieMap.put(4, bd4);
-
-		return movieMap;
+	public MovieImageData getRandomMovieImage() {
+		List<Movie> allMovies = new ArrayList<Movie>();
+		for (Level l : levels) {
+			allMovies.addAll(l.movies);
+		}
+		Collections.shuffle(allMovies);
+		Movie m = allMovies.get(0);
+		List<String> images = new ArrayList<String>(m.imageUrls);
+		Collections.shuffle(images);
+		return new MovieImageData(m.title, m.mdid, images.get(0));
 	}
 
 	private void loadQuestion() {
@@ -243,44 +373,11 @@ public class MovieService extends Service {
 			public void done(List<ParseObject> objList, ParseException arg1) {
 				if (arg1 == null) {
 					for (ParseObject movieImage : objList) {
-						imageLoader.get(movieImage.getString("url"), null);
 					}
 				}
 			}
 		});
 	}
 
-	//	private void loadRandomMovieImage(final int rand) {
-	//		ParseQuery<ParseObject> query = ParseQuery.getQuery("Movie");
-	//		query.setSkip(rand);
-	//		query.getFirstInBackground(new GetCallback<ParseObject>() {
-	//
-	//			@Override
-	//			public void done(final ParseObject parseObject, ParseException e) {
-	//				if (e == null) {
-	//					String str = "Got random movie " + parseObject.getString("title") + " rand " + rand + " url " + parseObject.get("mdId");
-	//					Log.v("GameActivity", str);
-	//
-	//					ParseQuery<ParseObject> imageQuery = ParseQuery.getQuery("MovieImage");
-	//					imageQuery.whereEqualTo("parent", parseObject);
-	//					imageQuery.findInBackground(new FindCallback<ParseObject>() {
-	//
-	//						@Override
-	//						public void done(List<ParseObject> objList, ParseException arg1) {
-	//							if (arg1 == null) {
-	//								Collections.shuffle(objList);
-	//								ParseObject movieImage = objList.get(0);
-	//								Log.v("GameActivity", parseObject.getString("title") + " " + movieImage.getString("url"));
-	//								new DownloadTask(parseObject.getInt("mdId")).execute(movieImage.getString("url"));
-	//							}
-	//						}
-	//					});
-	//				} else {
-	//					Log.e(TAG, "Couldn't get Movie rand " + rand);
-	//				}
-	//			}
-	//		});
-	//	}
-
-
 }
+

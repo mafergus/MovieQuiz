@@ -171,5 +171,6 @@
     <color name="GreenOverlay">#3200ff00</color>
     <color name="RedOverlay">#32ff0000</color>
     <color name="BlueOverlay">#320000ff</color>
+    <color name="BlackOverlay">#32000000</color>
 
 </resources>

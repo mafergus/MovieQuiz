@@ -3,6 +3,20 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
+    <View
+        android:id="@+id/back"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/IzzyYellow"
+        android:orientation="horizontal"
+        android:tag="back" />
+
+    <RelativeLayout
+        android:id="@+id/front"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:tag="front" />
+
     <ImageView
         android:layout_width="75dp"
         android:layout_height="75dp"

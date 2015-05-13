@@ -1,35 +1,42 @@
 package com.escalivadaapps.moviequiz;
 
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.AbsListView;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.GridView;
 
 import com.escalivadaapps.moviequiz.service.Level;
-import com.escalivadaapps.moviequiz.service.Movie;
 import com.escalivadaapps.moviequiz.service.MovieService;
 import com.escalivadaapps.moviequiz.service.MovieService.MyLocalBinder;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nostra13.universalimageloader.core.ImageLoader;
 
 
 public class MainActivity extends ActionBarActivity
@@ -45,23 +52,52 @@ implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 	 * Used to store the last screen title. For use in {@link #restoreActionBar()}.
 	 */
 	private CharSequence mTitle;
-	
+
+	protected List<Level> levels = new ArrayList<Level>();
+	protected AbsListView listView;
+	protected LevelGridImageAdapter adapter;
+
 	protected MovieService movieService;
 	protected ServiceConnection myConnection = new ServiceConnection() {
 
 		public void onServiceConnected(ComponentName className, IBinder service) {
 			MyLocalBinder binder = (MyLocalBinder) service;
 			movieService = binder.getService();
-			new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-				
-				@Override
-				public void run() {
-					showAll();					
-				}
-			}, 1000*30);
+			if (!levels.equals(movieService.getLevels())) {
+				levels.clear();
+				adapter.clear();
+				levels.addAll(movieService.getLevels());
+				adapter.addAll(levels);
+			}
 		}
 		public void onServiceDisconnected(ComponentName arg0) {}
 	};
+
+	private LevelBroadcastReceiver levelBroadcastReceiver;
+	private IntentFilter levelBroadcastIntentFilter;
+
+	private class LevelBroadcastReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (movieService != null) {
+				new Handler(Looper.getMainLooper()).post(new Runnable() {
+
+					@Override
+					public void run() {
+						Log.v("MNF", "ARE EQUAL? " + (levels.equals(movieService.getLevels()) ? "TRUE" : "FALSE") );
+						if (!levels.equals(movieService.getLevels())) {
+							levels.clear();
+							adapter.clear();
+							levels.addAll(movieService.getLevels());
+							adapter.addAll(levels);
+						}
+						Log.v("MNF", "GOT LEVELS BROADCAST!");
+					}
+				});
+			}
+		}
+	}
 
 
 	@Override
@@ -77,38 +113,60 @@ implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 		mNavigationDrawerFragment.setUp(
 				R.id.navigation_drawer,
 				(DrawerLayout) findViewById(R.id.drawer_layout));
-		
+		mNavigationDrawerFragment.setMenuVisibility(false);
+
 		Intent intent = new Intent(this, MovieService.class);
 		bindService(intent, myConnection, Context.BIND_AUTO_CREATE);
-	}
-	
-	private void showAll() {
-		List<Level> levels = movieService.getLevels();
-		for (Level l : levels) {
-			List<Movie> movies = l.movies;
-			for (Movie m : movies) {
-				List<String> urls = m.imageUrls;
-				for (String s : urls) {
-					Log.v(TAG, "" + movieService.isCached(s) + " level " + l.levelId + " " + l.name + " " + m.title + " " + s);
-				}
+
+		listView = (GridView) findViewById(R.id.grid);
+		listView.setSelector(R.drawable.alpha_selector);
+		listView.setDrawSelectorOnTop(true);
+		adapter = new LevelGridImageAdapter(this);
+		((GridView) listView).setAdapter(adapter);
+		listView.setOnItemClickListener(new OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+				Intent gameActivityIntent = new Intent(MainActivity.this, GameActivity.class);
+				Level l = (Level) adapter.getItem(position);
+				gameActivityIntent.putExtra("levelId", l.objectId);
+				startActivity(gameActivityIntent);
 			}
-		}
+		});
+
+		levelBroadcastReceiver = new LevelBroadcastReceiver();
+		levelBroadcastIntentFilter = new IntentFilter(MovieService.LEVEL_BROADCAST_FILTER);
+		registerReceiver(levelBroadcastReceiver, levelBroadcastIntentFilter);
 	}
+
+	//	private void showAll() {
+	//		List<Level> levels = movieService.getLevels();
+	//		for (Level l : levels) {
+	//			List<Movie> movies = l.movies;
+	//			for (Movie m : movies) {
+	//				List<String> urls = m.imageUrls;
+	//				for (String s : urls) {
+	//					Log.v(TAG, "" + movieService.isCached(s) + " level " + l.levelId + " " + l.name + " " + m.title + " " + s);
+	//				}
+	//			}
+	//		}
+	//	}
 
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		
+
+		unregisterReceiver(levelBroadcastReceiver);
 		unbindService(myConnection);
+		ImageLoader.getInstance().stop();
 	}
 
 	@Override
 	public void onNavigationDrawerItemSelected(int position) {
 		// update the main content by replacing fragments
-		FragmentManager fragmentManager = getSupportFragmentManager();
-		fragmentManager.beginTransaction()
-		.replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
-		.commit();
+		//		FragmentManager fragmentManager = getSupportFragmentManager();
+		//		fragmentManager.beginTransaction()
+		//		.replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
+		//		.commit();
 	}
 
 	public void onSectionAttached(int number) {
@@ -158,60 +216,6 @@ implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
-	}
-
-	/**
-	 * A placeholder fragment containing a simple view.
-	 */
-	public static class PlaceholderFragment extends Fragment {
-		/**
-		 * The fragment argument representing the section number for this
-		 * fragment.
-		 */
-		private static final String ARG_SECTION_NUMBER = "section_number";
-
-		private Button newGameButton;
-
-		/**
-		 * Returns a new instance of this fragment for the given section
-		 * number.
-		 */
-		public static PlaceholderFragment newInstance(int sectionNumber) {
-			PlaceholderFragment fragment = new PlaceholderFragment();
-			Bundle args = new Bundle();
-			args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-			fragment.setArguments(args);
-			return fragment;
-		}
-
-		public PlaceholderFragment() {}
-
-		@Override
-		public View onCreateView(LayoutInflater inflater, ViewGroup container,
-				Bundle savedInstanceState) {
-			View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-			newGameButton = (Button)rootView.findViewById(R.id.newGameButton);
-			newGameButton.setOnClickListener(new OnClickListener() {
-
-				@Override
-				public void onClick(View v) {
-//					FragmentManager fragmentManager = PlaceholderFragment.this.getFragmentManager();
-//					fragmentManager.beginTransaction()
-//					.replace(R.id.container, new GameFragment())
-//					.commit();
-					Intent i = new Intent(getActivity(), GameActivity.class);
-					startActivity(i);
-				}
-			});
-			return rootView;
-		}
-
-		@Override
-		public void onAttach(Activity activity) {
-			super.onAttach(activity);
-			((MainActivity) activity).onSectionAttached(
-					getArguments().getInt(ARG_SECTION_NUMBER));
-		}
 	}
 
 }
