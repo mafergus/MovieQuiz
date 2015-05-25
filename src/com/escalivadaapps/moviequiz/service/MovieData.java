@@ -1,6 +1,14 @@
 package com.escalivadaapps.moviequiz.service;
 
 final public class MovieData {
+	final public int movieId;
+	final public String title;
+	
+	public MovieData(int movieId, String title) {
+		this.movieId = movieId;
+		this.title = title;
+	}
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -22,12 +30,5 @@ final public class MovieData {
 			return false;
 		return true;
 	}
-
-	final public int movieId;
-	
-	public MovieData(int movieId) {
-		this.movieId = movieId;
-	}
-	
 	
 }

@@ -18,7 +18,7 @@
 		<br> <a href="#" onclick="showDiv('2');return false">Levels</a><br>
 		<br> <a href="#" onclick="showDiv('3');return false">Add
 			Movie</a><br> <br> <a href="#"
-			onclick="showDiv('5');return false">Add Level</a>
+			onclick="showDiv('5');return false">Add/Edit Level</a>
 
 	</nav>
 
@@ -47,6 +47,9 @@
 						<th>#</th>
 						<th>Number</th>
 						<th>Name</th>
+						<th>Image</th>
+						<th>Locked</th>
+						<th>Cost</th>
 						<th>Edit</th>
 						<th>Delete</th>
 					</tr>
@@ -89,29 +92,48 @@
 			</table>
 
 			<button type="button" class="button-success pure-button"
-				onclick="editMovie()" style="height: 50px; width: 200px">Edit</button>
+				onclick="submitMovie()" style="height: 50px; width: 200px">Edit</button>
 		</div>
 		<div id="container5" class="section">
-			<h1>Add Level</h1>
+			<h1>Add/Edit Level</h1>
 
 			<labelsmall>Level Name</labelsmall>
 			<input type="text" id="levelName"></input><br>
 			<labelsmall>Level Number</labelsmall>
-			<input type="text" id="levelId"></input><br> <br> <label>Add
-				Movie (CASE SENSITIVE!): </label> <br> <input type="text"
-				id="addLevelSearchMovie"></input> <br> <br> <br>
+			<input type="text" id="levelId"></input><br>
+			<labelsmall>Image Url</labelsmall>
+			<input type="text" id="levelUrl"></input><br>
+			<labelsmall>Is Random</labelsmall>
+			<input type="checkbox" id="isLevelRandom" style="float: left"></input>
+			<br>
+			<labelsmall>Is Locked</labelsmall>
+			<input type="checkbox" id="isLocked" style="float: left"> <br>
+			<labelsmall>Cost</labelsmall>
+			<br> <input type="text" id="addLevelCost"></input><br>
+			<labelsmall>Add Movie (CASE SENSITIVE!): </labelsmall>
+			<br> <input type="text" id="addLevelSearchMovie"></input> <br>
+			<br> <br>
 			<button type="button" class="button-success pure-button"
-				onclick="searchMovieForLevel()"
+				id="searchMovieButton" onclick="searchMovieForLevel()"
 				style="height: 50px; width: 200px; float: left">Search</button>
 			<br> <br>
-			<ol type="1" id="addLevelMovieList" style="float: left; width: 100%">
-			</ol>
+			<table id="addLevelMovieTable" class="table table-striped">
+				<thead>
+					<tr>
+						<th>#</th>
+						<th>Name</th>
+						<th>Delete</th>
+					</tr>
+				</thead>
+				<tbody id="addLevelMovieTableTbody">
+				</tbody>
+			</table>
 			<br> <br>
 			<button type="button" class="button-success pure-button"
-				onclick="submitLevel()"
+				id="levelSubmitButton" onclick="submitLevel()"
 				style="height: 50px; width: 200px; float: left">Submit</button>
 		</div>
-		<div id="container6" class="section">
+		<!-- <div id="container6" class="section">
 			<h1>Edit Level</h1>
 
 			<br>
@@ -119,11 +141,15 @@
 			<input type="text" id="editLevelName"></input> <br> <br>
 			<labelsmall>Level Number: </labelsmall>
 			<input type="text" id="editLevelNumber"></input><br>
+			<labelsmall>Is Random</labelsmall>
+			<input type="checkbox" id="editLevelIsLevelRandom"
+				style="float: left"></input><br>
 			<labelsmall>Search Movie:</labelsmall>
 			<br> <input type="text" id="editLevelSearchMovie"></input><br>
-			<button type="button" id="editLevelSearchMovieSubmit" class="button-success pure-button"
+			<button type="button" id="editLevelSearchMovieSubmit"
+				class="button-success pure-button"
 				style="height: 50px; width: 200px; float: left">Search</button>
-			<br><br><br>
+			<br> <br> <br>
 
 			<table id="editLevelList" class="table table-striped">
 				<thead>
@@ -140,7 +166,7 @@
 			<button type="button" id="editLevelSubmit"
 				class="button-success pure-button" onclick="editLevel()"
 				style="height: 50px; width: 200px">Edit</button>
-		</div>
+		</div> -->
 	</div>
 
 	<script src="index.js"></script>

@@ -1,11 +1,17 @@
 package com.escalivadaapps.moviequiz.service;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 final public class MovieImageData {
 	final public String movieTitle;
 	final public int mdId;
 	final public String url;
 
-	public MovieImageData(String title, int mdId, String url) {
+	@JsonCreator
+	public MovieImageData(@JsonProperty("movieTitle")String title, 
+			@JsonProperty("mdId")int mdId, 
+			@JsonProperty("url")String url) {
 		this.movieTitle = title;
 		this.mdId = mdId;
 		this.url = url;

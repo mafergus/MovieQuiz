@@ -81,7 +81,12 @@ public class Question {
 				@Override
 				public void onLoadingFailed(String imageUri, View view,
 						FailReason failReason) {
-					Log.v(TAG, "onLoadingFailed()");
+					Log.v(TAG, "onLoadingFailed() " + imageUri + " reason: " + failReason.toString());
+					remaining--;
+					if (remaining == 0) {
+						Log.v(TAG, "loaded all images should trigger callback for " + correctAnswer.mdId);
+						callback.onComplete(Question.this);
+					}
 				}
 				@Override
 				public void onLoadingComplete(final String imageUri, View view, final Bitmap loadedImage) {

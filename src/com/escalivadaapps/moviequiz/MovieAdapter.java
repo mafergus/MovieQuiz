@@ -30,7 +30,7 @@ public class MovieAdapter extends ArrayAdapter<MovieImage> {
 		Log.v(TAG, "add MovieData id " + po.movieId + " count " + data.size());
 		notifyDataSetChanged();
 	}
-	
+
 	public void addAll(List<MovieImage> movies) {
 		for (MovieImage md : movies) {
 			data.add(md);
@@ -59,6 +59,7 @@ public class MovieAdapter extends ArrayAdapter<MovieImage> {
 			holder = new NewsHolder();
 			holder.image = (ImageView)row.findViewById(R.id.image);
 			holder.overlay = (RelativeLayout)row.findViewById(R.id.imageOverlay);
+			holder.back = (ImageView)row.findViewById(R.id.back);
 			row.setTag(holder);
 		}
 		else {
@@ -69,7 +70,8 @@ public class MovieAdapter extends ArrayAdapter<MovieImage> {
 
 		MovieImage itemdata = data.get(position);
 		holder.image.setImageBitmap(itemdata.drawable);
-		holder.overlay.setBackgroundColor(context.getResources().getColor(getColorResId(position)));
+		holder.overlay.setBackgroundDrawable(context.getResources().getDrawable(getDrawableResId(position)));
+		holder.back.setBackgroundDrawable(context.getResources().getDrawable(getDrawableResId(position)));
 		Log.v(TAG, "position " + position + " height " + imageRow.getMyHeight());
 
 		return row;
@@ -82,19 +84,20 @@ public class MovieAdapter extends ArrayAdapter<MovieImage> {
 
 	static class NewsHolder{
 		public ImageView image;
+		public ImageView back;
 		public RelativeLayout overlay;
 	}
 
-	public int getColorResId(int index) {
+	public int getDrawableResId(int index) {
 		switch (index) {
 		case 0:
-			return R.color.YellowOverlay;
+			return R.drawable.yellowoverlay;
 		case 1:
-			return R.color.BlueOverlay;
+			return R.drawable.blueoverlay;
 		case 2:
-			return R.color.RedOverlay;
+			return R.drawable.redoverlay;
 		case 3:
-			return R.color.GreenOverlay;
+			return R.drawable.greenoverlay;
 		default:
 			return android.R.color.transparent;
 		}

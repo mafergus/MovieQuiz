@@ -7,25 +7,25 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.StateListDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.escalivadaapps.moviequiz.service.Level;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
 
-class LevelGridImageAdapter extends BaseAdapter {
+class LevelListImageAdapter extends BaseAdapter {
 	final private Context context;
 	final private List<Level> levels = new ArrayList<Level>();
 
 	private LayoutInflater inflater;
 	private DisplayImageOptions options;
 
-	LevelGridImageAdapter(Context context) {
+	LevelListImageAdapter(Context context) {
 		this.context = context;
 		inflater = LayoutInflater.from(context);
 
@@ -44,7 +44,7 @@ class LevelGridImageAdapter extends BaseAdapter {
 	public int getCount() {
 		return levels.size();
 	}
-	
+
 	public void clear() {
 		levels.clear();
 		notifyDataSetInvalidated();
@@ -80,6 +80,7 @@ class LevelGridImageAdapter extends BaseAdapter {
 			holder.text = (TextView) view.findViewById(R.id.text);
 			Typeface font = ((MovieQuizApplication)context.getApplicationContext()).getRegularFont();
 			holder.text.setTypeface(font);
+			holder.image = (ImageView)view.findViewById(R.id.image);
 			view.setTag(holder);
 		} else {
 			holder = (ViewHolder) view.getTag();
@@ -87,19 +88,21 @@ class LevelGridImageAdapter extends BaseAdapter {
 
 		Level l = (Level)getItem(position);
 
-		
-		holder.text.setBackgroundColor(LevelGridImageAdapter.getRandomColor());
 		holder.text.setText(l.name);
-//		StateListDrawable states = new StateListDrawable();
-//		states.addState(new int[] {android.R.attr.state_pressed},
-//				new ColorDrawable(LevelGridImageAdapter.getRandomColor()) );
-//		states.addState(new int[] { },
-//				new ColorDrawable(Color.TRANSPARENT) );
-//		view.setBackgroundDrawable(states);
+		ImageLoader.getInstance().displayImage(l.imageUrl, holder.image);
+
+		//		holder.text.setBackgroundColor(LevelGridImageAdapter.getRandomColor());
+
+		//		StateListDrawable states = new StateListDrawable();
+		//		states.addState(new int[] {android.R.attr.state_pressed},
+		//				new ColorDrawable(LevelGridImageAdapter.getRandomColor()) );
+		//		states.addState(new int[] { },
+		//				new ColorDrawable(Color.TRANSPARENT) );
+		//		view.setBackgroundDrawable(states);
 
 		return view;
 	}
-	
+
 	static public int getRandomColor() {
 		int color = (int) (Math.random() * 16777215);
 		String hexColor = String.format("#%06X", (0xFFFFFF & color));
@@ -109,5 +112,6 @@ class LevelGridImageAdapter extends BaseAdapter {
 	static class ViewHolder {
 		TextView text;
 		int color;
+		ImageView image;
 	}
 }

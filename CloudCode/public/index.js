@@ -80,54 +80,96 @@ function loadMovies() {
 }
 
 function editLevel() {
-	showDiv('6');
-	document.getElementById("editLevelName").value = "";
-	document.getElementById("editLevelNumber").value = "";
-	document.getElementById("editLevelList").innerHTML = "";
+	clearLevelFields();
+	showDiv('5');
 
-	var Level = Parse.Object.extend("Level");
-	var query = new Parse.Query(Level);
-	var levelId = this.id;
-	query.get(this.id, {
-		success: function(level) {
-			console.log("Got level to edit ");
+	levelId = this.id;
+	addOrEditLevel(levelId);
 
-			document.getElementById("editLevelSubmit").onclick = function() {
-				level.set("name", document.getElementById("editLevelName").value);
-				level.set("levelNumber", parseInt(document.getElementById("editLevelNumber").value, 10));
-				level.save(null, {
-					success: function(gameScore) {
-						alert('Updated object with objectId: ' + gameScore.id);
-					},
-					error: function(gameScore, error) {
-						alert('Failed to update object, with error code: ' + error.message);
-					}
-				});
-			}
+//	document.getElementById("levelName").value = "";
+//	document.getElementById("levelId").value = "";
+//	document.getElementById("levelUrl").value = "";
+//	document.getElementById("isLevelRandom").value = "";
+//	document.getElementById("isLocked").value = "";
+//	document.getElementById("addLevelCost").value = "";
+//	document.getElementById("addLevelSearchMovie").value = "";
+//	document.getElementById("addLevelMovieTableTbody").innerHTML = "";
 
-			document.getElementById("editLevelSearchMovieSubmit").onclick = function() {
-				editLevelSearchMovie(level);
-			}
+//	var Level = Parse.Object.extend("Level");
+//	var query = new Parse.Query(Level);
+//	levelId = this.id;
+//	query.get(this.id, {
+//	success: function(level) {
+//	console.log("Got level to edit ");
 
-			document.getElementById("editLevelName").value = level.get("name");
-			document.getElementById("editLevelNumber").value = level.get("levelNumber");
+//	document.getElementById("levelSubmitButton").onclick = function() {
+//	level.set("name", document.getElementById("levelName").value);
+//	level.set("levelUrl", document.getElementById("levelUrl").value);
+//	level.set("levelNumber", parseInt(document.getElementById("levelId").value, 10));
+//	level.set("isRandom", document.getElementById("isLevelRandom").checked);
+//	level.set("isLocked", document.getElementById("isLocked").checked);
+//	var cost = 0;
+//	if (document.getElementById("addLevelCost").value !== "") {
+//	cost = parseInt(document.getElementById("addLevelCost").value, 10);
+//	}
+//	level.set("cost", cost);
+//	level.save(null, {
+//	success: function(gameScore) {
+//	alert('Updated object with objectId: ' + gameScore.id);
+//	location.reload();
+//	},
+//	error: function(gameScore, error) {
+//	alert('Failed to update object, with error code: ' + error.message);
+//	}
+//	});
+//	}
 
-			level.relation("movies").query().find({
-				success: function(list) {
-					var table = document.getElementById("editLevelList");
-					for (var i=0; i<list.length; i++) {
-						console.log("Got movie " + list[i].get("title"));
-						var movie = list[i];
-						addMovieForEditLevel(table, movie, level);
-					}
-				}
-			});
+//	document.getElementById("searchMovieButton").onclick = function() {
+//	editLevelSearchMovie(level);
+//	}
 
-		},
-		error: function(object, error) {
-			console.log("Coudln't get leve to delete");
-		}
-	});
+//	document.getElementById("levelName").value = level.get("name");
+//	document.getElementById("levelId").value = level.get("levelNumber");
+//	document.getElementById("levelUrl").value = level.get("levelUrl");
+//	document.getElementById("isLevelRandom").checked = level.get("isRandom");
+//	document.getElementById("isLocked").checked = level.get("isLocked");
+//	document.getElementById("addLevelCost").value = level.get("cost");
+
+//	var query = level.relation("movieImages").query();
+//	query.include("parent");
+//	query.find({
+//	success: function(list) {
+//	var table = document.getElementById("addLevelMovieTable");
+
+//	var mdIds = {};
+//	for (var i=0; i<list.length; i++) {
+//	console.log("Got movie image " + list[i].get("url") + " " + list[i].get("title") + list[i].get("parent").get("title"));
+//	var mdId = list[i].get("parent").get("mdId"); 
+//	if ( mdId in mdIds ) {
+//	var images = mdIds[mdId];
+//	images.push(list[i]);
+//	} else {
+//	var images = [];
+//	images.push( list[i] );
+//	mdIds[mdId] = images;
+//	}
+//	}
+
+//	for (var mdId in mdIds) {
+//	var movieImages = mdIds[mdId];
+//	var subTable = addMovieToTable(movieImages[0].get("parent"), table);
+//	for (var i=0; i<movieImages.length; i++) {
+//	addMovieImageRow(movieImages[i], subTable);
+//	}
+//	}
+//	}
+//	});
+
+//	},
+//	error: function(object, error) {
+//	console.log("Coudln't get leve to delete");
+//	}
+//	});
 }
 
 function addMovieForEditLevel(table, movie, level) {
@@ -147,27 +189,30 @@ function addMovieForEditLevel(table, movie, level) {
 	deleteButton.type = "button";
 	deleteButton.value = "Delete";
 	deleteButton.onclick = function() {
-		removeMovieFromLevel(level, movie.id, deleteButton);
+		parentNode.parentNode.parentNode.removeChild(parentNode.parentNode);
+//		removeMovieFromLevel(level, movie.id, deleteButton);
 	}
 	cell4.appendChild(deleteButton);
 }
 
 function removeMovieFromLevel(level, movieId, deleteButton) {
-	console.log("removeMovieFromLevel " + level.get("name") + " " + level.get("levelNumber") + " movie.id " + movieId);
-	var Level = Parse.Object.extend("Level");
-	var Movie = Parse.Object.extend("Movie")
-	var relation = level.relation("movies");
-	var movieQuery = new Parse.Query(Movie);
-	movieQuery.get(movieId, {
-		success: function(movie) {
-			console.log("Got movie to remove " + movie.id);
-			relation.remove(movie);
-			level.save();
-		},
-		error: function(object, error) {
-			console.log("Coudln't get movie to remove");
-		}
-	});
+	if (level !== null) {
+		console.log("removeMovieFromLevel " + level.get("name") + " " + level.get("levelNumber") + " movie.id " + movieId);
+		var Level = Parse.Object.extend("Level");
+		var Movie = Parse.Object.extend("Movie")
+		var relation = level.relation("movies");
+		var movieQuery = new Parse.Query(Movie);
+		movieQuery.get(movieId, {
+			success: function(movie) {
+				console.log("Got movie to remove " + movie.id);
+				relation.remove(movie);
+				level.save();
+			},
+			error: function(object, error) {
+				console.log("Coudln't get movie to remove");
+			}
+		});
+	}
 
 	deleteButton.parentNode.parentNode.parentNode.removeChild(deleteButton.parentNode.parentNode);
 }
@@ -201,6 +246,11 @@ function deleteLevel() {
 	}
 
 }
+
+function submitMovie() {
+	location.reload();
+} 
+
 
 function editMovie(movieId) {
 	showDiv('4');
@@ -319,13 +369,6 @@ function makeOnclick(checkbox) {
 	}
 }
 
-function blobToFile(theBlob, fileName){
-	//A Blob() is almost a File() - it's just missing the two properties below which we will add
-	theBlob.lastModifiedDate = new Date();
-	theBlob.name = fileName;
-	return theBlob;
-}
-
 function gotMovieCB(data) {
 	var movie = JSON.parse(data);
 	var titleTextArea = document.getElementById("movieTitle");
@@ -425,19 +468,31 @@ function loadLevels() {
 
 					var row = table.insertRow(table.rows.length);
 
-					var cell1 = row.insertCell(0);
+					var cell1 = row.insertCell(row.cells.length);
 					var number = document.createTextNode("" + table.rows.length-1);
 					cell1.appendChild(number);
 
-					var cell2 = row.insertCell(1);
+					var cell2 = row.insertCell(row.cells.length);
 					var title = document.createTextNode("" +  results[i].get("levelNumber"));
 					cell2.appendChild(title);
 
-					var cell3 = row.insertCell(2);
+					var cell3 = row.insertCell(row.cells.length);
 					var mdid = document.createTextNode("" + results[i].get("name"));
 					cell3.appendChild(mdid);
 
-					var cell3 = row.insertCell(3);
+					var cellUrl = row.insertCell(row.cells.length);
+					var url = document.createTextNode("" + results[i].get("imageUrl"));
+					cellUrl.appendChild(url);
+
+					var cellLocked = row.insertCell(row.cells.length);
+					var isLocked = document.createTextNode("" + results[i].get("isLocked"));
+					cellLocked.appendChild(isLocked);
+
+					var cellCost = row.insertCell(row.cells.length);
+					var cost = document.createTextNode("" + results[i].get("cost"));
+					cellCost.appendChild(cost);
+
+					var cell3 = row.insertCell(row.cells.length);
 					var editButton = document.createElement("input");
 					editButton.id = results[i].id;
 					editButton.type = "button";
@@ -445,7 +500,7 @@ function loadLevels() {
 					editButton.onclick = editLevel;
 					cell3.appendChild(editButton);
 
-					var cell4 = row.insertCell(4);
+					var cell4 = row.insertCell(row.cells.length);
 					var deleteButton = document.createElement("input");
 					deleteButton.id = results[i].id;
 					deleteButton.type = "button";
@@ -532,7 +587,7 @@ function editLevelSearchMovie(level) {
 	});
 }
 
-function searchMovieForLevel() {
+function searchMovieForLevel(level) {
 	var title = document.getElementById("addLevelSearchMovie").value;
 
 	var Movie = Parse.Object.extend("Movie");
@@ -541,8 +596,19 @@ function searchMovieForLevel() {
 	query.find({
 		success: function(results) {
 			if (results.length > 0) {
-				addRow(results[0].get("title"));
-				movies.push(results[0]);
+				var movie = results[0];
+				var MovieImage = Parse.Object.extend("MovieImage");
+				var query = new Parse.Query(MovieImage);
+				query.equalTo("parent", movie);
+				query.find({
+					success: function(movieImages) {
+						var table = document.getElementById("addLevelMovieTable");
+						var subTable = addMovieToTable(movie, table);
+						for (var i=0; i<movieImages.length; i++) {
+							addMovieImageRow(movieImages[i], subTable);
+						}
+					}
+				});
 
 				var printStr = "Movies:";
 				for (var i=0; i<movies.length; i++) {
@@ -560,9 +626,75 @@ function searchMovieForLevel() {
 	});
 }
 
+function addMovieToTable(movie, table) {
+	var row = table.insertRow(table.rows.length);
+	row.id = movie.id;
+	row.className = "addLevelMainRow";
+
+	$(row).click(function() {
+		var rows = $( ".addLevelMainRow" );
+		var index = $(this).index();
+		$(rows).eq(index).toggle();
+		console.log("Row index " + index + " table size " + rows.length + " count " + rows.length);
+	});
+
+	var cell1 = row.insertCell(0);
+	var number = document.createTextNode("" + table.rows.length-1);
+	cell1.appendChild(number);
+
+	var textCell = row.insertCell(1);
+	var text = document.createTextNode(movie.get("title"));
+	textCell.appendChild(text);
+
+	var cell4 = row.insertCell(2);
+	var deleteButton = document.createElement("input");
+	deleteButton.id = movie.id;
+	deleteButton.type = "button";
+	deleteButton.value = "Delete";
+	deleteButton.onclick = function() {
+		this.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode);
+//		removeMovieFromLevel(level, movie.id, deleteButton);
+	}
+	cell4.appendChild(deleteButton);
+
+	var newRow = table.insertRow(table.rows.length);
+	newRow.className = "addLevelMainRow";
+	var subTableCell = newRow.insertCell(0);
+	var subTable = document.createElement('table');
+//	subTable.id = movie.id;
+	subTableCell.appendChild(subTable);
+
+	return subTable;
+}
+
+function addMovieImageRow(movieImage, subTable) {
+	console.log("imageUrl " + movieImage.get("url"));
+
+	var subRow = subTable.insertRow(subTable.rows.length);
+	subRow.className = "urlRow";
+	subRow.id = movieImage.get("url");
+
+	var imageCell = subRow.insertCell(0);
+	var img = document.createElement("img");
+	img.setAttribute('src', movieImage.get("url"));
+	imageCell.appendChild(img);
+
+	var cell4 = subRow.insertCell(1);
+	var checkbox = document.createElement("input");
+	checkbox.id = movieImage.id;
+	checkbox.checked = true;
+	checkbox.type = "checkbox";
+	checkbox.className = "movieImage";
+	img.onclick = makeOnclick(checkbox);
+	cell4.appendChild(checkbox);
+}
+
 var movies = [];
 
 function addRow(movieTitle) {
+
+	addMovieForEditLevel(table, movie, level);
+
 	var movieList = document.getElementById("addLevelMovieList");
 	var entry = document.createElement('li');
 	entry.className = "li";
@@ -611,7 +743,7 @@ function submitMovies() {
 				aMovie.set("title", title);
 				aMovie.set("mdId", id);
 
-				var inputs = document.querySelectorAll("input[type='checkbox']");
+				var inputs = document.getElementById("photos").querySelectorAll("input[type='checkbox']");
 				for(var i = 0; i < inputs.length; i++) {
 					if (inputs[i].checked === true) {
 
@@ -632,6 +764,123 @@ function submitMovies() {
 	});
 }
 
+function addOrEditLevel(levelId) {
+	var level;
+	if (levelId === 0) {
+		var Level = Parse.Object.extend("level");
+		level = new Level();
+		setButtonStuff(level);
+		populateMovieImages(level);
+	} else {
+		loadLevel(levelId);
+	}
+}
+
+function clearLevelFields() {
+	document.getElementById("levelName").value = "";
+	document.getElementById("levelId").value = "";
+	document.getElementById("levelUrl").value = "";
+	document.getElementById("isLevelRandom").value = "";
+	document.getElementById("isLocked").value = "";
+	document.getElementById("addLevelCost").value = "";
+	document.getElementById("addLevelSearchMovie").value = "";
+//	document.getElementById("addLevelMovieTableTbody").innerHTML = "";
+	$("#addLevelMovieTableTbody").find("tr:gt(0)").remove();
+}
+
+function setButtonStuff(level) {
+	document.getElementById("levelSubmitButton").onclick = function() {
+		level.set("name", document.getElementById("levelName").value);
+		level.set("imageUrl", document.getElementById("levelUrl").value);
+		level.set("levelNumber", parseInt(document.getElementById("levelId").value, 10));
+		level.set("isRandom", document.getElementById("isLevelRandom").checked);
+		level.set("isLocked", document.getElementById("isLocked").checked);
+		var cost = 0;
+		if (document.getElementById("addLevelCost").value !== "") {
+			cost = parseInt(document.getElementById("addLevelCost").value, 10);
+		}
+		level.set("cost", cost);
+		level.save(null, {
+			success: function(gameScore) {
+				alert('Updated object with objectId: ' + gameScore.id);
+				location.reload();
+			},
+			error: function(gameScore, error) {
+				alert('Failed to update object, with error code: ' + error.message);
+			}
+		});
+	}
+
+	document.getElementById("searchMovieButton").onclick = function() {
+		editLevelSearchMovie(level);
+	}
+}
+
+function populateMovieImages(level) {
+	var query = level.relation("movieImages").query();
+	query.include("parent");
+	query.find({
+		success: function(list) {
+			var table = document.getElementById("addLevelMovieTable");
+
+			var mdIds = {};
+			for (var i=0; i<list.length; i++) {
+				console.log("Got movie image " + list[i].get("url") + " " + list[i].get("title") + list[i].get("parent").get("title"));
+				var mdId = list[i].get("parent").get("mdId"); 
+				if ( mdId in mdIds ) {
+					var images = mdIds[mdId];
+					images.push(list[i]);
+				} else {
+					var images = [];
+					images.push( list[i] );
+					mdIds[mdId] = images;
+				}
+			}
+
+			for (var mdId in mdIds) {
+				var movieImages = mdIds[mdId];
+				var subTable = addMovieToTable(movieImages[0].get("parent"), table);
+				for (var i=0; i<movieImages.length; i++) {
+					addMovieImageRow(movieImages[i], subTable);
+				}
+			}
+			var rows = $( ".addLevelMainRow" );
+			var index = $(this).index();
+			$(rows).each(function(i, row) {
+				$(row).trigger('click');
+
+//				toggle();
+			})
+//			for (var i=0; i<rows.length; i++) {
+//			}
+		}
+	});
+}
+
+function loadLevel(levelId) {
+	var Level = Parse.Object.extend("Level");
+	var query = new Parse.Query(Level);
+	query.get(levelId, {
+		success: function(level) {
+			console.log("Got level to edit ");
+
+			setButtonStuff(level);
+
+			document.getElementById("levelName").value = level.get("name");
+			document.getElementById("levelId").value = level.get("levelNumber");
+			document.getElementById("levelUrl").value = level.get("imageUrl");
+			document.getElementById("isLevelRandom").checked = level.get("isRandom");
+			document.getElementById("isLocked").checked = level.get("isLocked");
+			document.getElementById("addLevelCost").value = level.get("cost");
+
+			populateMovieImages(level);
+		},
+		error: function(object, error) {
+			console.log("Coudln't get leve to delete");
+		}
+	});
+}
+
 function submitLevel() {
 	if (validate()) {
 		var Level = Parse.Object.extend("Level");
@@ -640,45 +889,86 @@ function submitLevel() {
 		var levelName = document.getElementById("levelName").value;
 		var levelId = document.getElementById("levelId").value;
 		var levelIdNum = parseInt(levelId, 10);
-
-		var printStr = "Movies:";
-		for (var i=0; i<movies.length; i++) {
-			printStr += " movie[" + i + "] " + movies[i].get("title");
+		var isRandom = document.getElementById("isLevelRandom").checked;
+		var isLocked = document.getElementById("isLocked").checked;
+		var levelUrl = document.getElementById("levelUrl").value;
+		var cost = document.getElementById("addLevelCost").value;
+		if (cost === "") {
+			cost = 0;
 		}
-		console.log(printStr);
+
+//		var printStr = "Movies:";
+//		for (var i=0; i<movies.length; i++) {
+//		printStr += " movie[" + i + "] " + movies[i].get("title");
+//		}
+//		console.log(printStr);
 
 		level.set("levelNumber", levelIdNum);
 		level.set("name", levelName);
-		var relation = level.relation("movies");
-		for (var i=0; i<movies.length; i++) {
-			relation.add(movies[i]);
-		}
+		level.set("imageUrl", levelUrl);
+		level.set("isRandom", isRandom);
+		level.set("isLocked", isLocked);
+		level.set("cost", parseInt(cost, 10));
 
-		level.save(null, {
-			success: function(gameScore) {
-				// Execute any logic that should take place after the object is saved.
-				alert('New object created with objectId: ' + gameScore.id);
-				document.getElementById("levelName").value = '';
-				document.getElementById("levelId").value = '';
-				document.getElementById("searchBox").value = '';
-				document.getElementById("movieList").innerHTML = "";
-				movies = [];
-			},
-			error: function(gameScore, error) {
-				// Execute any logic that should take place if the save fails.
-				// error is a Parse.Error with an error code and message.
-				alert('Failed to create new object, with error code: ' + error.message);
+//		var rows = $( ".movieImage" ).each(function( index, value ) {
+//		console.log( index + ": " + $( this ).attr('id') );
+//		});
+
+		var relation = level.relation("movieImages");
+		var movieImageIds = [];
+		$( ".movieImage" ).each(function(index, value) {
+			if ( $( this ).is(':checked') ) {
+				movieImageIds.push( $( this ).attr('id') );
 			}
 		});
+
+		var MovieImage = Parse.Object.extend("MovieImage");
+		var query = new Parse.Query(MovieImage);
+		query.containedIn("objectId", movieImageIds);
+		query.find({
+			success: function(results) {
+				var relation = level.relation("movieImages");
+				for (var i=0; i<results.length; i++) {
+					relation.add(results[i]);
+				}
+				level.save(null, {
+					success: function(level) {
+						// Execute any logic that should take place after the object is saved.
+						alert('New object created with objectId: ' + level.id);
+						document.getElementById("levelName").value = '';
+						document.getElementById("levelId").value = '';
+						document.getElementById("levelUrl").value = '';
+						document.getElementById("searchBox").value = '';
+						document.getElementById("isLevelRandom").checked = false;
+						document.getElementById("isLocked").checked = false;
+						document.getElementById("addLevelCost").value = '';
+						document.getElementById("addLevelSearchMovie").value = '';
+						document.getElementById("addLevelMovieTableTbody").innerHTML = "";
+						movies = [];
+					},
+					error: function(gameScore, error) {
+						// Execute any logic that should take place if the save fails.
+						// error is a Parse.Error with an error code and message.
+						alert('Failed to create new object, with error code: ' + error.message);
+					}
+				});
+			},
+			error: function(results) {
+				alert("query failure " + results.length);
+			}
+		});
+
+
 	}
 }
 
 function validate() {
 	var levelName = document.getElementById("levelName").value;
 	var levelId = document.getElementById("levelId").value;
+	var imageUrl = document.getElementById("levelUrl").value;
 	var numMovies = document.getElementById("movieList").childNodes.length;
 
-	if (levelName === '' || levelId === '' || numMovies == 0) {
+	if (levelName === '' || levelId === '' || numMovies == 0 || levelUrl === '') {
 		alert("Fill all the fields and add at least one movie!");
 		return false;
 	} else {

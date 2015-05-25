@@ -15,6 +15,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -22,8 +23,6 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.Animation.AnimationListener;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -35,10 +34,11 @@ import com.escalivadaapps.moviequiz.service.Movie;
 import com.escalivadaapps.moviequiz.service.MovieImageData;
 import com.escalivadaapps.moviequiz.service.MovieService;
 import com.escalivadaapps.moviequiz.service.MovieService.MyLocalBinder;
-import com.escalivadaapps.moviequiz.views.CorrectAnswerRowView;
-import com.escalivadaapps.moviequiz.views.NextAnswerRowView;
-import com.escalivadaapps.moviequiz.views.TotalCoinsRowView;
-import com.escalivadaapps.moviequiz.views.TurnCoinsRowView;
+import com.escalivadaapps.moviequiz.views.CorrectAnswerSlotOneView;
+import com.escalivadaapps.moviequiz.views.GameOverSlotFourView;
+import com.escalivadaapps.moviequiz.views.GameOverSlotOneView;
+import com.escalivadaapps.moviequiz.views.GameOverSlotThreeView;
+import com.escalivadaapps.moviequiz.views.GameOverSlotTwoView;
 import com.fortysevendeg.swipelistview.BaseSwipeListViewListener;
 import com.fortysevendeg.swipelistview.SwipeListView;
 import com.nhaarman.listviewanimations.appearance.AnimationAdapter;
@@ -50,8 +50,9 @@ import com.nhaarman.listviewanimations.appearance.simple.SwingRightInAnimationAd
 
 public class GameActivity extends Activity {
 	final static private String TAG = GameActivity.class.getCanonicalName();
-	final static private int START_TIME_MS = 10000;
+	final static private int START_TIME_MS = 8000;
 	final static private int NUM_QUESTIONS = 10;
+	final static public int RESULT_CODE_LEVEL_UNLOCKED = 1212345;
 
 	public static int itemHeight;
 
@@ -107,14 +108,20 @@ public class GameActivity extends Activity {
 
 			@Override
 			public void onEnded(long totalRunTimeMs) {
-				onQuestionIncorrect(0);
+				MediaPlayer mp = MediaPlayer.create(getApplicationContext(), R.raw.alarmclock_fade_boosted);
+				mp.start();
+				startListExitAnimation(swipelistview, new AnimationCallback() {
+
+					@Override
+					public void onAnimationEnded() {
+						onQuestionIncorrect(0);						
+					}
+				});
 			}
 		});
 		this.listOverlay = (ViewGroup)findViewById(R.id.listOverlay);
 
 		doListStuff();
-
-		MovieQuizApplication application = (MovieQuizApplication)getApplicationContext(); 
 	}
 
 	@Override
@@ -170,44 +177,17 @@ public class GameActivity extends Activity {
 
 	class MyAnimationListener implements AnimatorListener {
 		final int position;
-		final int correctAnswer;
-		final View rowView;
-		public MyAnimationListener(int position, int correctAnswer, final View row) { 
+		final AnimationCallback callback;
+		public MyAnimationListener(int position, final AnimationCallback callback) { 
 			this.position = position; 
-			this.correctAnswer = correctAnswer;
-			this.rowView = row;
+			this.callback = callback;
 		}
-		@Override
-		public void onAnimationStart(Animator animation) {
-			if (position == 0) {
-				questionText.animate().setDuration(ROW_ANIM_DURATION).alpha(1f);
-				timer.animate().setDuration(ROW_ANIM_DURATION).alpha(1f);
-			}
-		}
-		@Override
-		public void onAnimationEnd(Animator animation) {
-			if (position == 3) {
-				adapter.clear();
-				onQuestionCorrect(this.correctAnswer);
-			}
-		}
-		@Override
-		public void onAnimationCancel(Animator animation) {}
-		@Override
-		public void onAnimationRepeat(Animator animation) {}
-	}
-
-	class OverlayAnimationListener implements AnimatorListener {
-		final int position;
-		public OverlayAnimationListener(int position) { this.position = position; }
 		@Override
 		public void onAnimationStart(Animator animation) {}
 		@Override
 		public void onAnimationEnd(Animator animation) {
 			if (position == 3) {
-				overlayList.closeOpenedItems();
-				overlayList.setVisibility(View.INVISIBLE);
-				loadQuestion(questions.get(0));
+				callback.onAnimationEnded();
 			}
 		}
 		@Override
@@ -218,27 +198,15 @@ public class GameActivity extends Activity {
 
 	private final static int ROW_ANIM_DURATION = 500;
 
-	private void startListExitAnimation(final ListView list) {
-		for (int i=0; i<4; i++) {
-			list.setEnabled(false);
+	private void startListExitAnimation(final ListView list, final AnimationCallback callback) {
+		list.setEnabled(false);
+		for (int i=0; i<list.getCount(); i++) {
 			final View rowView = list.getChildAt(i); 
 			rowView.animate().setDuration(ROW_ANIM_DURATION)
 			.setStartDelay(i*100)
 			.alpha(0f)
 			.translationX(rowView.getWidth())
-			.setListener(new MyAnimationListener(i, 1, rowView));
-		}
-	}
-
-	private void startOverlayExitAnimation(final ListView list) {
-		for (int i=0; i<4; i++) {
-			list.setEnabled(false);
-			final View rowView = list.getChildAt(i); 
-			rowView.animate().setDuration(ROW_ANIM_DURATION)
-			.setStartDelay(i*100)
-			.alpha(0f)
-			.translationX(rowView.getWidth())
-			.setListener(new OverlayAnimationListener(i));
+			.setListener(new MyAnimationListener(i, callback));
 		}
 	}
 
@@ -252,17 +220,33 @@ public class GameActivity extends Activity {
 		overlayList.setVisibility(View.INVISIBLE);
 		swipelistview = (AnswerList)findViewById(R.id.answerList); 
 		adapter = new MovieAdapter(this, R.layout.custom_row);
-		//		animAdapter = new SwingLeftInAnimationAdapter(new MovieAdapter(this, R.layout.custom_row));
 		animAdapter = new SwingLeftInAnimationAdapter(adapter);
 		animAdapter.setAbsListView(swipelistview);
 		swipelistview.setSwipeListViewListener(new BaseSwipeListViewListener() {
 			@Override
 			public void onOpened(final int position, boolean toRight) {
+				timer.stop();
 				MovieImage data = adapter.getItem(position);
 				if (data.movieId == GameActivity.this.correctAnswer) {
-					startListExitAnimation(swipelistview);
+					startListExitAnimation(swipelistview, new AnimationCallback() {
+
+						@Override
+						public void onAnimationEnded() {
+							adapter.clear();
+							onQuestionCorrect(correctAnswer);							
+						}
+					});
 				} else {
-					onQuestionIncorrect(position);
+					startListExitAnimation(swipelistview, new AnimationCallback() {
+
+						@Override
+						public void onAnimationEnded() {
+							adapter.clear();
+							onQuestionIncorrect(position);
+						}
+					});
+					questionText.animate().setDuration(ROW_ANIM_DURATION).alpha(0f);
+					timer.animate().setDuration(ROW_ANIM_DURATION).alpha(0f);
 				}
 			}
 			@Override
@@ -311,13 +295,13 @@ public class GameActivity extends Activity {
 	}
 
 	public void startQuestion() {
-		//		for (int i=0; i<loadedMovies.size(); i++) {
-		//			animAdapter.add(i, loadedMovies.get(i));
-		//		}
 		swipelistview.setEnabled(true);
 		overlayList.setEnabled(true);
 		swipelistview.closeOpenedItems();
 		loadAnimAdapter();
+		questionText.animate().setDuration(ROW_ANIM_DURATION).alpha(1f);
+		timer.setVisibility(View.VISIBLE);
+		timer.animate().setDuration(ROW_ANIM_DURATION).alpha(1f);
 
 		adapter.addAll(loadedMovies);
 		loading.dismiss();
@@ -332,9 +316,9 @@ public class GameActivity extends Activity {
 		if (rand == 0) {
 			soundResId = R.raw.correctanswer1;
 		} else if (rand == 1) {
-			soundResId = R.raw.correctanswer2;
+			soundResId = R.raw.correctanswer1;
 		} else if (rand == 2) {
-			soundResId = R.raw.correctanswer3;
+			soundResId = R.raw.correctanswer1;
 		}
 
 		MediaPlayer mp = MediaPlayer.create(getApplicationContext(), soundResId);
@@ -354,7 +338,6 @@ public class GameActivity extends Activity {
 	public void onQuestionIncorrect(int position) {
 		timer.stop();
 
-		Toast.makeText(this, "GAME OVER SON", Toast.LENGTH_SHORT).show();
 		int rand = randInt(0, 2);
 		int soundResId = 0;
 		if (rand == 0) {
@@ -367,34 +350,81 @@ public class GameActivity extends Activity {
 		MediaPlayer mp = MediaPlayer.create(getApplicationContext(), soundResId);
 		mp.start();
 
-		finish();
+		showQuestionIncorrectOverlay();
+	}
+
+	public interface AnimationCallback {
+		public void onAnimationEnded();
+	}
+
+	public void showQuestionIncorrectOverlay() {
+
+		overlayAdapter.clear();
+		overlayAdapter.add(new GameOverSlotOneView(this, GameActivity.itemHeight));
+		overlayAdapter.add(new GameOverSlotTwoView(this, GameActivity.itemHeight));
+		overlayAdapter.add(new GameOverSlotThreeView(this, GameActivity.itemHeight));
+		overlayAdapter.add(new GameOverSlotFourView(this, GameActivity.itemHeight));
+
+		questionText.animate().setDuration(ROW_ANIM_DURATION).alpha(1f);
+		questionText.setText(getString(R.string.fail_text));
+
+		overlayList.setVisibility(View.VISIBLE);
+		animOverlayAdapter = new SwingLeftInAnimationAdapter(overlayAdapter);
+		animOverlayAdapter.setAbsListView(overlayList);
+		overlayList.setAdapter(animOverlayAdapter);
+		overlayList.setSwipeListViewListener(new BaseSwipeListViewListener() {
+			@Override
+			public void onOpened(final int position, boolean toRight) {
+				startListExitAnimation(overlayList, new AnimationCallback() {
+
+					@Override
+					public void onAnimationEnded() {
+						overlayList.closeOpenedItems();
+						overlayList.setVisibility(View.INVISIBLE);
+						finish();
+						overridePendingTransition(0, android.R.anim.fade_out);
+						if (position == 0) {
+							Intent gameIntent = new Intent(GameActivity.this, GameActivity.class);
+							gameIntent.putExtra("levelId", levelId);
+							GameActivity.this.startActivity(gameIntent);
+							overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+						}
+					}
+				});
+				questionText.animate().setDuration(ROW_ANIM_DURATION).alpha(0f);
+				timer.animate().setDuration(ROW_ANIM_DURATION).alpha(0f);
+			}
+			@Override
+			public void onClosed(int position, boolean fromRight) {}
+			@Override
+			public void onListChanged() {
+				overlayList.closeOpenedItems();
+			}
+			@Override
+			public void onMove(int position, float x) {}
+			@Override
+			public void onStartOpen(int position, int action, boolean right) {}
+			@Override
+			public void onStartClose(int position, boolean right) {}
+			@Override
+			public void onClickFrontView(int position) {}
+			@Override
+			public void onClickBackView(int position) {}
+			@Override
+			public void onDismiss(int[] reverseSortedPositions) {}
+
+		});
+		overlayAdapter.notifyDataSetChanged();
 	}
 
 	public void showQuestionCorrectOverlay(int position, int score, int totalPoints) {
 		int correctRow = position;
 
 		overlayAdapter.clear();
-		if (correctRow == 0) {
-			overlayAdapter.add(new CorrectAnswerRowView(this, GameActivity.itemHeight));
-			overlayAdapter.add(new TurnCoinsRowView(this, GameActivity.itemHeight));
-			overlayAdapter.add(new TotalCoinsRowView(this, GameActivity.itemHeight));
-			overlayAdapter.add(new NextAnswerRowView(this, GameActivity.itemHeight));
-		} else if (correctRow == 1) {
-			overlayAdapter.add(new TurnCoinsRowView(this, GameActivity.itemHeight));
-			overlayAdapter.add(new CorrectAnswerRowView(this, GameActivity.itemHeight));
-			overlayAdapter.add(new TotalCoinsRowView(this, GameActivity.itemHeight));
-			overlayAdapter.add(new NextAnswerRowView(this, GameActivity.itemHeight));
-		} else if (correctRow == 2) {
-			overlayAdapter.add(new TurnCoinsRowView(this, GameActivity.itemHeight));
-			overlayAdapter.add(new TotalCoinsRowView(this, GameActivity.itemHeight));
-			overlayAdapter.add(new CorrectAnswerRowView(this, GameActivity.itemHeight));
-			overlayAdapter.add(new NextAnswerRowView(this, GameActivity.itemHeight));
-		} else if (correctRow == 3) {
-			overlayAdapter.add(new NextAnswerRowView(this, GameActivity.itemHeight));
-			overlayAdapter.add(new CorrectAnswerRowView(this, GameActivity.itemHeight));
-			overlayAdapter.add(new TurnCoinsRowView(this, GameActivity.itemHeight));
-			overlayAdapter.add(new TotalCoinsRowView(this, GameActivity.itemHeight));
-		}
+		overlayAdapter.add(new CorrectAnswerSlotOneView(this, GameActivity.itemHeight));
+		overlayAdapter.add(new ImageRow(this, GameActivity.itemHeight, new ColorDrawable(getResources().getColor(R.color.FlatRed))));
+		overlayAdapter.add(new ImageRow(this, GameActivity.itemHeight, new ColorDrawable(getResources().getColor(R.color.FlatBlue))));
+		overlayAdapter.add(new ImageRow(this, GameActivity.itemHeight, new ColorDrawable(getResources().getColor(R.color.FlatGreen))));
 
 		overlayList.setVisibility(View.VISIBLE);
 		animOverlayAdapter = new SwingLeftInAnimationAdapter(overlayAdapter);
@@ -406,10 +436,17 @@ public class GameActivity extends Activity {
 				questions.remove(0);
 
 				if (questions.size() == 0) {
-					Toast.makeText(GameActivity.this, "You win!!!!", Toast.LENGTH_SHORT).show();
-					finish();
+					showGameWon();
 				} else {
-					startOverlayExitAnimation(overlayList);
+					startListExitAnimation(overlayList, new AnimationCallback() {
+
+						@Override
+						public void onAnimationEnded() {
+							overlayList.closeOpenedItems();
+							overlayList.setVisibility(View.INVISIBLE);
+							loadQuestion(questions.get(0));							
+						}
+					});
 					questionText.animate().setDuration(ROW_ANIM_DURATION).alpha(0f);
 					timer.animate().setDuration(ROW_ANIM_DURATION).alpha(0f);
 				}
@@ -447,6 +484,62 @@ public class GameActivity extends Activity {
 		overlayAdapter.notifyDataSetChanged();
 	}
 
+	private void showGameWon() {
+		startListExitAnimation(overlayList, new AnimationCallback() {
+
+			@Override
+			public void onAnimationEnded() {
+				MediaPlayer mp = MediaPlayer.create(getApplicationContext(), R.raw.level_passed);
+				mp.start();
+
+				overlayList.closeOpenedItems();
+				questionText.setText(getString(R.string.level_passed));
+				questionText.animate().setDuration(ROW_ANIM_DURATION).alpha(1f);
+
+				overlayAdapter.clear();
+				overlayAdapter.add(new CorrectAnswerSlotOneView(GameActivity.this, GameActivity.itemHeight));
+				overlayAdapter.add(new ImageRow(GameActivity.this, GameActivity.itemHeight, new ColorDrawable(getResources().getColor(R.color.FlatRed))));
+				overlayAdapter.add(new ImageRow(GameActivity.this, GameActivity.itemHeight, new ColorDrawable(getResources().getColor(R.color.FlatBlue))));
+				overlayAdapter.add(new ImageRow(GameActivity.this, GameActivity.itemHeight, new ColorDrawable(getResources().getColor(R.color.FlatGreen))));
+
+				//				overlayList.setVisibility(View.VISIBLE);
+				animOverlayAdapter = new SwingLeftInAnimationAdapter(overlayAdapter);
+				animOverlayAdapter.setAbsListView(overlayList);
+				overlayList.setAdapter(animOverlayAdapter);
+				overlayList.setSwipeListViewListener(new BaseSwipeListViewListener() {
+					@Override
+					public void onOpened(int position, boolean toRight) {
+						Intent result = new Intent();
+						result.putExtra("levelId", levelId);
+						setResult(RESULT_CODE_LEVEL_UNLOCKED);
+						finish();
+						overridePendingTransition(0, android.R.anim.fade_out);
+					}
+					@Override
+					public void onClosed(int position, boolean fromRight) {}
+					@Override
+					public void onListChanged() { overlayList.closeOpenedItems();  }
+					@Override
+					public void onMove(int position, float x) {}
+					@Override
+					public void onStartOpen(int position, int action, boolean right) {}
+					@Override
+					public void onStartClose(int position, boolean right) {}
+					@Override
+					public void onClickFrontView(int position) {}
+					@Override
+					public void onClickBackView(int position) {}
+					@Override
+					public void onDismiss(int[] reverseSortedPositions) {}
+
+				});
+				overlayAdapter.notifyDataSetChanged();
+			}
+		});
+		questionText.animate().setDuration(ROW_ANIM_DURATION).alpha(0f);
+		timer.animate().setDuration(ROW_ANIM_DURATION).alpha(0f);
+	}
+
 	public int convertDpToPixel(float dp) {
 		DisplayMetrics metrics = getResources().getDisplayMetrics();
 		float px = dp * (metrics.densityDpi / 160f);
@@ -472,33 +565,51 @@ public class GameActivity extends Activity {
 	}
 
 	private void loadQuestions() {
-		loading = ProgressDialog.show(GameActivity.this, "Loading ...", "", true);
+		qLoaded = 0;
+		loading = ProgressDialog.show(GameActivity.this, "Loading ...", "", true, true);
 
 		Level l = movieService.getLevelById(levelId);
 		Log.v(TAG, "loadQuesions() " + l.name);
 
-		List<Movie> movies = new ArrayList<Movie>(l.movies);
-		if (movies.size() < 10) {
-			int numToAdd = NUM_QUESTIONS-movies.size();
-			for (int i=0; i<numToAdd; i++) {
-				movies.add(movies.get(i % movies.size()));
-			}
-		}
-
+		List<Movie> movies = l.getMovieList();
+		List<MovieImageData> levelImages = new ArrayList<MovieImageData>(l.movieImages);
+		Collections.shuffle(levelImages);
 		Collections.shuffle(movies);
-		qLoaded = 0;
+
 		for (int i=0; i<NUM_QUESTIONS; i++) {
 			Movie m = movies.get(i);
-			List<String> images = new ArrayList<String>(m.imageUrls);
-			Collections.shuffle(images);
+			List<String> movieImageUrls = new ArrayList<String>(m.imageUrls);
+			Collections.shuffle(movieImageUrls);
+			List<MovieImageData> movieImages = new ArrayList<MovieImageData>(l.movieImages);
+			Collections.shuffle(movieImages);
 
-			String img1 = images.get(0);
-			MovieImageData correctAnswer = new MovieImageData(m.title, m.mdid, img1);
-			MovieImageData wrongAnswer1 = movieService.getRandomMovieImage();
-			MovieImageData wrongAnswer2 = movieService.getRandomMovieImage();
-			MovieImageData wrongAnswer3 = movieService.getRandomMovieImage();
+			List<String> urls = new ArrayList<String>();
+			MovieImageData correctAnswer = new MovieImageData(m.title, m.mdid, movieImageUrls.get(0));
+			urls.add(correctAnswer.url);
 
-			Question q = new Question(m.title, correctAnswer, wrongAnswer1, wrongAnswer2, wrongAnswer3, new Callback() {
+			MovieImageData wrongAnswer1;
+			MovieImageData wrongAnswer2;
+			MovieImageData wrongAnswer3;
+
+			if (l.isRandom) {
+				wrongAnswer1 = movieService.getRandomMovieImage(urls);
+				urls.add(wrongAnswer1.url);
+				wrongAnswer2 = movieService.getRandomMovieImage(urls);
+				urls.add(wrongAnswer2.url);
+				wrongAnswer3 = movieService.getRandomMovieImage(urls);
+			} else {
+				List<MovieImageData> toRemove = new ArrayList<MovieImageData>();
+				for (String imgUrl : m.imageUrls) {
+					toRemove.add(new MovieImageData(m.title, m.mdid, imgUrl));
+				}
+				movieImages.remove(toRemove);
+
+				wrongAnswer1 = movieImages.get(0);
+				wrongAnswer2 = movieImages.get(1);
+				wrongAnswer3 = movieImages.get(2);
+			}
+
+			Question q = new Question(correctAnswer.movieTitle, correctAnswer, wrongAnswer1, wrongAnswer2, wrongAnswer3, new Callback() {
 
 				@Override
 				public void onComplete(Question question) {
@@ -509,8 +620,7 @@ public class GameActivity extends Activity {
 						loadQuestion(questions.get(0));
 						Log.v("MNF", "LOADED ALL QUESTIONS!!! " + Arrays.toString(questions.toArray()));
 					}
-				}
-			});
+				}});
 			q.load(this);
 			questions.add(q);
 		}
@@ -520,8 +630,6 @@ public class GameActivity extends Activity {
 
 	private void loadQuestion(Question question) {
 		adapter.clear();
-		//		animAdapter.reset();
-		//		((MovieAdapter)animAdapter.getDecoratedBaseAdapter()).clear();
 		loadedMovies.clear();
 
 		MovieImage correctAnswer = new MovieImage(question.images.get(question.correctAnswer.url), question.correctAnswer.mdId);

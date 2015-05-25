@@ -15,8 +15,6 @@
         android:id="@+id/front"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="fitXY"
-        android:src="@drawable/correct_draft"
-        android:tag="front" />
+        android:src="@drawable/next_draft" />
 
 </RelativeLayout>

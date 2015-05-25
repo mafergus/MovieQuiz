@@ -1,31 +1,29 @@
 package com.escalivadaapps.moviequiz;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.graphics.Typeface;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.GridView;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.escalivadaapps.moviequiz.service.Level;
@@ -33,21 +31,9 @@ import com.escalivadaapps.moviequiz.service.MovieService;
 import com.escalivadaapps.moviequiz.service.MovieService.MyLocalBinder;
 import com.nostra13.universalimageloader.core.ImageLoader;
 
-
-public class MainActivity extends ActionBarActivity
-implements NavigationDrawerFragment.NavigationDrawerCallbacks {
-	final static String TAG = MainActivity.class.getCanonicalName();
+public class HomeActivity extends Activity {
+	final static String TAG = HomeActivity.class.getCanonicalName();
 	final static public short GAME_REQUEST = 111;
-
-	/**
-	 * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
-	 */
-	private NavigationDrawerFragment mNavigationDrawerFragment;
-
-	/**
-	 * Used to store the last screen title. For use in {@link #restoreActionBar()}.
-	 */
-	private CharSequence mTitle;
 
 	protected List<Level> levels = new ArrayList<Level>();
 	protected AbsListView listView;
@@ -99,30 +85,22 @@ implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
-
-		mNavigationDrawerFragment = (NavigationDrawerFragment)
-				getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
-		mTitle = getTitle();
-
-		// Set up the drawer.
-		mNavigationDrawerFragment.setUp(
-				R.id.navigation_drawer,
-				(DrawerLayout) findViewById(R.id.drawer_layout));
-		mNavigationDrawerFragment.setMenuVisibility(false);
+		setContentView(R.layout.home);
 
 		Intent intent = new Intent(this, MovieService.class);
 		bindService(intent, myConnection, Context.BIND_AUTO_CREATE);
 
-		listView = (GridView) findViewById(R.id.grid);
+		((TextView)findViewById(R.id.titleText)).setTypeface(Typeface.createFromAsset(getAssets(), "deftone_stylus.ttf"));
+
+		listView = (ListView) findViewById(R.id.levelList);
 		listView.setSelector(R.drawable.alpha_selector);
-		listView.setDrawSelectorOnTop(true);
+//		listView.setDrawSelectorOnTop(true);
 		adapter = new LevelListImageAdapter(this);
-		((GridView) listView).setAdapter(adapter);
+		((ListView) listView).setAdapter(adapter);
 		listView.setOnItemClickListener(new OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				Intent gameActivityIntent = new Intent(MainActivity.this, GameActivity.class);
+				Intent gameActivityIntent = new Intent(HomeActivity.this, GameActivity.class);
 				Level l = (Level) adapter.getItem(position);
 				gameActivityIntent.putExtra("levelId", l.objectId);
 				startActivityForResult(gameActivityIntent, GAME_REQUEST);
@@ -155,7 +133,7 @@ implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 		unbindService(myConnection);
 		ImageLoader.getInstance().stop();
 	}
-	
+
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (requestCode == GAME_REQUEST) {
@@ -165,64 +143,6 @@ implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 				Toast.makeText(this, "LEVEL UNLCOKED " + data.getExtras().getString("levelId"), Toast.LENGTH_LONG).show();
 			}
 		}
-	}
-
-	@Override
-	public void onNavigationDrawerItemSelected(int position) {
-		// update the main content by replacing fragments
-		//		FragmentManager fragmentManager = getSupportFragmentManager();
-		//		fragmentManager.beginTransaction()
-		//		.replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
-		//		.commit();
-	}
-
-	public void onSectionAttached(int number) {
-		switch (number) {
-		case 1:
-			mTitle = getString(R.string.title_section1);
-			break;
-		case 2:
-			mTitle = getString(R.string.title_section2);
-			break;
-		case 3:
-			mTitle = getString(R.string.title_section3);
-			break;
-		case 4:
-			mTitle = getString(R.string.title_game_section);
-			break;
-		}
-	}
-
-	public void restoreActionBar() {
-		ActionBar actionBar = getSupportActionBar();
-		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
-		actionBar.setDisplayShowTitleEnabled(true);
-		actionBar.setTitle(mTitle);
-	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		if (!mNavigationDrawerFragment.isDrawerOpen()) {
-			// Only show items in the action bar relevant to this screen
-			// if the drawer is not showing. Otherwise, let the drawer
-			// decide what to show in the action bar.
-			getMenuInflater().inflate(R.menu.main, menu);
-			restoreActionBar();
-			return true;
-		}
-		return super.onCreateOptionsMenu(menu);
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		// Handle action bar item clicks here. The action bar will
-		// automatically handle clicks on the Home/Up button, so long
-		// as you specify a parent activity in AndroidManifest.xml.
-		int id = item.getItemId();
-		if (id == R.id.action_settings) {
-			return true;
-		}
-		return super.onOptionsItemSelected(item);
 	}
 
 }

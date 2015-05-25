@@ -172,5 +172,11 @@
     <color name="RedOverlay">#32ff0000</color>
     <color name="BlueOverlay">#320000ff</color>
     <color name="BlackOverlay">#32000000</color>
+    <color name="FlatYellow">#f1c40f</color>
+    <color name="FlatBlue">#2a80b9</color>
+    <color name="FlatRed">#e84c3d</color>
+    <color name="FlatGreen">#2ecd71</color>
+    <color name="MainColor">#e67e22</color>
+    <color name="MainTransparent">#C2e67e22</color>
 
 </resources>

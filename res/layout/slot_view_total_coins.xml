@@ -7,10 +7,22 @@
         android:id="@+id/back"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/IzzyYellow"
+        android:background="@color/FlatBlue"
         android:orientation="horizontal"
         android:tag="back" />
 
+    <Button
+        android:id="@+id/front"
+        android:layout_width="@dimen/button_width"
+        android:layout_height="@dimen/button_height"
+        android:layout_centerInParent="true"
+        android:background="@drawable/white_rectangle"
+        android:tag="front"
+        android:text="UNLOCK"
+        android:textColor="@color/FlatBlue"
+        android:textSize="@dimen/button_text_size" />
+
+    <!--
     <RelativeLayout
         android:id="@+id/front"
         android:layout_width="wrap_content"
@@ -51,5 +63,6 @@
         android:text="Total"
         android:textColor="@color/white"
         android:textSize="22sp" />
+    -->
 
 </RelativeLayout>

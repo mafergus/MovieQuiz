@@ -5,10 +5,12 @@ import android.view.LayoutInflater;
 
 import com.escalivadaapps.moviequiz.R;
 
-public class NextAnswerRowView extends OverlayRow {
-	public NextAnswerRowView(final Context context, int height) {
+public class DoneSlotView extends OverlayRow {
+
+	public DoneSlotView(final Context context, int height) {
 		super(context, height);
 
-		LayoutInflater.from(context).inflate(R.layout.slot_view_next, this);
+		LayoutInflater.from(context).inflate(R.layout.slot_view_done, this);
 	}
+
 }

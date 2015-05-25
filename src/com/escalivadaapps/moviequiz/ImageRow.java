@@ -1,6 +1,7 @@
 package com.escalivadaapps.moviequiz;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -29,7 +30,7 @@ public class ImageRow extends FrameLayout {
 		LayoutInflater.from(context).inflate(R.layout.custom_row, this);
 	}
 
-	public ImageRow(final Context context, final int height) {
+	public ImageRow(final Context context, int height) {
 		this(context);
 
 		this.height = height;
@@ -43,6 +44,12 @@ public class ImageRow extends FrameLayout {
 		image.setLayoutParams(new RelativeLayout.LayoutParams(android.widget.RelativeLayout.LayoutParams.MATCH_PARENT, this.height));
 
 		Log.v(TAG, "height " + height);
+	}
+
+	public ImageRow(final Context context, int height, Drawable d) {
+		this(context, height);
+
+		((ImageView)findViewById(R.id.image)).setImageDrawable(d);
 	}
 
 	public int getMyHeight() {

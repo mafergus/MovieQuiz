@@ -6,9 +6,9 @@ import android.widget.TextView;
 
 import com.escalivadaapps.moviequiz.R;
 
-public class TurnCoinsRowView extends OverlayRow {
+public class GameOverSlotThreeView extends OverlayRow {
 	
-	public TurnCoinsRowView(Context context, int height) {
+	public GameOverSlotThreeView(Context context, int height) {
 		super(context, height);
 		
 		LayoutInflater.from(context).inflate(R.layout.slot_view_turn_coins, this);

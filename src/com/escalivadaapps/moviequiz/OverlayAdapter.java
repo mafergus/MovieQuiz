@@ -10,18 +10,18 @@ import android.widget.BaseAdapter;
 
 import com.escalivadaapps.moviequiz.MovieAdapter.NewsHolder;
 import com.escalivadaapps.moviequiz.views.OverlayRow;
-import com.escalivadaapps.moviequiz.views.TotalCoinsRowView;
+import com.escalivadaapps.moviequiz.views.GameOverSlotTwoView;
 
 public class OverlayAdapter extends BaseAdapter {
 	final private Context context;
 
-	private List<OverlayRow> rows = new ArrayList<OverlayRow>();
+	private List<ViewGroup> rows = new ArrayList<ViewGroup>();
 
 	public OverlayAdapter(final Context context) {
 		this.context = context;
 	}
 
-	public void add(final OverlayRow row) {
+	public void add(final ViewGroup row) {
 		this.rows.add(row);
 		notifyDataSetChanged();
 	}

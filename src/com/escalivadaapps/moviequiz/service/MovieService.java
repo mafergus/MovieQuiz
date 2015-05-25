@@ -3,10 +3,10 @@ package com.escalivadaapps.moviequiz.service;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Random;
 
 import android.app.Service;
 import android.content.Context;
@@ -39,12 +39,12 @@ public class MovieService extends Service {
 	final static private String TAG = MovieService.class.getCanonicalName();
 	final static public String LEVEL_BROADCAST_FILTER = "newlevelbroadcast";
 	final static private int LEVEL_UPDATED_INTERVAL = 5 * 60 * 1000;
-	final static private int NUM_TO_LOAD = 1000;
+	final static private int NUM_TO_LOAD = 50;
 
 	final public ObjectMapper mapper = new ObjectMapper();
 	private final IBinder myBinder = new MyLocalBinder();
 
-	private Map< MovieData, List<String> > movieMap = new HashMap<MovieData, List<String> >();
+	private List<Movie> movieList = new ArrayList<Movie>();
 	private List<Level> levels = new ArrayList<Level>();
 
 	@Override
@@ -107,10 +107,10 @@ public class MovieService extends Service {
 				}
 			}
 		});
-		
+
 		loadCachedLevels();
 	}
-	
+
 	public void loadCachedLevels() {
 		Log.v(TAG, "Loading cached level");
 		SharedPreferences prefs = getSharedPreferences(getPackageName()+"prefs", Context.MODE_PRIVATE);
@@ -118,6 +118,7 @@ public class MovieService extends Service {
 		if (storedGames != null && levels.isEmpty()) {
 			try {
 				Level[] storedLevels = mapper.readValue(storedGames, Level[].class);
+				Log.v(TAG, "" + Arrays.toString(storedLevels));
 				levels.clear();
 				for (Level l : storedLevels) {
 					levels.add(l);
@@ -161,6 +162,7 @@ public class MovieService extends Service {
 			this.callback = callback;
 		}
 		public void load() {
+			Log.v(TAG, "LoadMovieRequest#load()");
 			ParseQuery<ParseObject> movieImageQuery = ParseQuery.getQuery("MovieImage");
 			movieImageQuery.whereEqualTo("parent", movieObj);
 			movieImageQuery.findInBackground(new FindCallback<ParseObject>() {
@@ -171,9 +173,7 @@ public class MovieService extends Service {
 						List<String> urls = new ArrayList<String>();
 						for (final ParseObject movieImage : parseObjs) {
 							urls.add(movieImage.getString("url"));
-							Log.v(TAG, "" + movieObj.getString("title") + " " + movieImage.getString("url"));
-							//							ImageLoader.getInstance().loadImage(movieImage.getString("url"), 
-							//									((MovieQuizApplication)getApplicationContext()).getImageOptions(), null);
+							Log.v(TAG, "LoadMovieRequest#load#done" + movieObj.getString("title") + " " + movieImage.getString("url"));
 						}
 						Movie m = new Movie(movieObj.getInt("mdId"), movieObj.getString("title"), urls);
 						callback.onLoad(m);
@@ -190,39 +190,37 @@ public class MovieService extends Service {
 		final private ParseObject levelObj;
 		private int count = 0;
 		private int completed = 0;
-		private List<Movie> movies = new ArrayList<Movie>();
+		private List<MovieImageData> movieImages = new ArrayList<MovieImageData>();
 		public LoadLevelRequest(final ParseObject levelObj, final LoadCallback<Level> callback) { 
 			this.levelObj = levelObj;
 			this.callback = callback;
 		}
 		public void load() {
-			levelObj.getRelation("movies").getQuery().findInBackground(new FindCallback<ParseObject>() {
+			ParseQuery<ParseObject> relationQuery = levelObj.getRelation("movieImages").getQuery();
+			relationQuery.include("parent");
+			relationQuery.setLimit(1000);
+			relationQuery.findInBackground(new FindCallback<ParseObject>() {
 
 				public void done(List<ParseObject> results, ParseException e) {
 					if (e != null) {
 						callback.onError();
 					} else {
 						count = results.size();
-						for (final ParseObject movie : results) {
-							LoadMovieRequest movieRequest = new LoadMovieRequest(movie, new LoadCallback<Movie>() {
 
-								@Override
-								public void onLoad(Movie obj) {
-									Log.v(TAG, "LoadMovieRequest loaded Movie " + movie.getString("title"));
-									movies.add(obj);
-									completed++;
-									if (completed == count) {
-										final Level l = new Level(levelObj.getObjectId(), levelObj.getInt("levelNumber"), 
-												levelObj.getString("name"), movies);
-										callback.onLoad(l);
-									}
-								}
-
-								@Override
-								public void onError() { Log.v(TAG, "Failed to load movie request"); callback.onError(); }
-							});
-							movieRequest.load();
+						List<MovieImageData> movieImageList = new ArrayList<MovieImageData>();
+						for (ParseObject movieImage : results) {
+							movieImageList.add(new MovieImageData(movieImage.getParseObject("parent").getString("title"), 
+									movieImage.getParseObject("parent").getInt("mdId"), 
+									movieImage.getString("url")));
 						}
+
+						final Level l = new Level(levelObj.getObjectId(), 
+								levelObj.getInt("levelNumber"), 
+								levelObj.getString("name"), 
+								movieImageList, 
+								levelObj.getBoolean("isRandom"),
+								levelObj.getString("imageUrl"));
+						callback.onLoad(l);
 					}
 				}
 			});
@@ -236,6 +234,7 @@ public class MovieService extends Service {
 
 			@Override
 			public void run() {
+				loadAllMovies();
 
 				ParseQuery<ParseObject> query = ParseQuery.getQuery("Level");
 				query.setLimit(NUM_TO_LOAD);
@@ -248,6 +247,7 @@ public class MovieService extends Service {
 							tempLevels.clear();
 							final int count = parseObjs.size();
 							for (final ParseObject level : parseObjs) {
+
 								LoadLevelRequest levelRequest = new LoadLevelRequest(level, new LoadCallback<Level>() {
 
 									@Override
@@ -302,7 +302,9 @@ public class MovieService extends Service {
 	}
 
 	public List<Level> getLevels() {
-		return levels;
+		List<Level> levelsCopy = new ArrayList<Level>(this.levels);
+		Collections.sort(levelsCopy, new Level.LevelComparator());
+		return levelsCopy;
 	}
 
 	public Level getLevelById(String id) {
@@ -314,20 +316,24 @@ public class MovieService extends Service {
 		return null;
 	}
 
-	public MovieImageData getRandomMovieImage() {
-		List<Movie> allMovies = new ArrayList<Movie>();
-		for (Level l : levels) {
-			allMovies.addAll(l.movies);
+	private Random rand = new Random();
+
+	public MovieImageData getRandomMovieImage(List<String> excludeUrls) {
+		if (excludeUrls == null) {
+			excludeUrls = new ArrayList<String>();
 		}
-		Collections.shuffle(allMovies);
-		Movie m = allMovies.get(0);
-		List<String> images = new ArrayList<String>(m.imageUrls);
-		Collections.shuffle(images);
-		return new MovieImageData(m.title, m.mdid, images.get(0));
+
+		Movie randMovie = movieList.get( rand.nextInt(movieList.size()) ); 
+		List<String> urls = new ArrayList<String>(randMovie.imageUrls);
+		urls.removeAll(excludeUrls);
+		Collections.shuffle(urls);
+
+		return new MovieImageData(randMovie.title, randMovie.mdid, urls.get(0));
 	}
 
-	private void loadQuestion() {
+	private void loadAllMovies() {
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("Movie");
+		query.whereExists("objectId");
 		query.countInBackground(new CountCallback() {
 			public void done(int count, ParseException e) {
 				if (e == null) {
@@ -350,11 +356,8 @@ public class MovieService extends Service {
 			@Override
 			public void done(List<ParseObject> objectList, ParseException e) {
 				if (e == null) {
+					Log.v(TAG, "Loading movies got count: " + objectList.size());
 					for (ParseObject movie : objectList) {
-						if (!movieMap.containsKey(movie)) {
-							List<String> movieImages = new ArrayList<String>();
-							movieMap.put(new MovieData(movie.getInt("mdId")), movieImages);
-						}
 						loadMovieImages(movie);
 					}
 				} else {
@@ -372,7 +375,14 @@ public class MovieService extends Service {
 			@Override
 			public void done(List<ParseObject> objList, ParseException arg1) {
 				if (arg1 == null) {
+					Log.v(TAG, "Loading Movie Images count: " + objList.size());
+					List<String> urls = new ArrayList<String>();
 					for (ParseObject movieImage : objList) {
+						urls.add(movieImage.getString("url"));
+					}
+					Movie m = new Movie(movie.getInt("mdId"), movie.getString("title"), urls);
+					if (!movieList.contains(m)) {
+						movieList.add(m);						
 					}
 				}
 			}
