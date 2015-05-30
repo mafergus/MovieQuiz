@@ -11,7 +11,8 @@
         android:orientation="horizontal"
         android:tag="back" />
 
-    <Button
+    <!--
+         <Button
         android:id="@+id/front"
         android:layout_width="@dimen/button_width"
         android:layout_height="@dimen/button_height"
@@ -21,6 +22,13 @@
         android:text="HOME"
         android:textColor="@color/FlatRed"
         android:textSize="@dimen/button_text_size" />
+    -->
+
+    <ImageView
+        android:id="@+id/front"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:tag="front" />
 
     <!--
     <RelativeLayout

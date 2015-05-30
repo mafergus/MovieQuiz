@@ -20,4 +20,19 @@
         android:textSize="42sp"
         android:textStyle="bold" />
 
+    <RelativeLayout
+        android:id="@+id/overlay"
+        android:layout_width="match_parent"
+        android:layout_height="160dp"
+        android:background="#C2000000"
+        android:visibility="invisible" >
+
+        <ImageView
+            android:id="@+id/overlayImage"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_centerInParent="true"
+            android:src="@drawable/level_locked" />
+    </RelativeLayout>
+
 </RelativeLayout>

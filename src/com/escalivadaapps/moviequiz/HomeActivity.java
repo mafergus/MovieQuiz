@@ -21,11 +21,11 @@ import android.view.View;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.GridView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.escalivadaapps.moviequiz.LevelListImageAdapter.LevelData;
 import com.escalivadaapps.moviequiz.service.Level;
 import com.escalivadaapps.moviequiz.service.MovieService;
 import com.escalivadaapps.moviequiz.service.MovieService.MyLocalBinder;
@@ -36,7 +36,7 @@ public class HomeActivity extends Activity {
 	final static public short GAME_REQUEST = 111;
 
 	protected List<Level> levels = new ArrayList<Level>();
-	protected AbsListView listView;
+	protected ListView listView;
 	protected LevelListImageAdapter adapter;
 
 	protected MovieService movieService;
@@ -94,14 +94,14 @@ public class HomeActivity extends Activity {
 
 		listView = (ListView) findViewById(R.id.levelList);
 		listView.setSelector(R.drawable.alpha_selector);
-//		listView.setDrawSelectorOnTop(true);
+		//		listView.setDrawSelectorOnTop(true);
 		adapter = new LevelListImageAdapter(this);
 		((ListView) listView).setAdapter(adapter);
 		listView.setOnItemClickListener(new OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 				Intent gameActivityIntent = new Intent(HomeActivity.this, GameActivity.class);
-				Level l = (Level) adapter.getItem(position);
+				LevelData l = (LevelData) adapter.getItem(position);
 				gameActivityIntent.putExtra("levelId", l.objectId);
 				startActivityForResult(gameActivityIntent, GAME_REQUEST);
 			}
@@ -111,19 +111,6 @@ public class HomeActivity extends Activity {
 		levelBroadcastIntentFilter = new IntentFilter(MovieService.LEVEL_BROADCAST_FILTER);
 		registerReceiver(levelBroadcastReceiver, levelBroadcastIntentFilter);
 	}
-
-	//	private void showAll() {
-	//		List<Level> levels = movieService.getLevels();
-	//		for (Level l : levels) {
-	//			List<Movie> movies = l.movies;
-	//			for (Movie m : movies) {
-	//				List<String> urls = m.imageUrls;
-	//				for (String s : urls) {
-	//					Log.v(TAG, "" + movieService.isCached(s) + " level " + l.levelId + " " + l.name + " " + m.title + " " + s);
-	//				}
-	//			}
-	//		}
-	//	}
 
 	@Override
 	protected void onDestroy() {
@@ -140,8 +127,31 @@ public class HomeActivity extends Activity {
 			if (resultCode == GameActivity.RESULT_CODE_LEVEL_UNLOCKED) {
 				MediaPlayer mp = MediaPlayer.create(getApplicationContext(), R.raw.unlock);
 				mp.start();
-				Toast.makeText(this, "LEVEL UNLCOKED " + data.getExtras().getString("levelId"), Toast.LENGTH_LONG).show();
+				if (data != null && data.getExtras() != null) {
+					Level level = movieService.getLevelById(data.getExtras().getString("levelId"));
+					if (level.levelId+1 < adapter.getCount()) {
+						listView.smoothScrollToPosition(level.levelId);
+						LevelData ld = (LevelData)adapter.getItem(level.levelId);
+						ld.isLocked = false;
+						View v = getViewByPosition(level.levelId, listView);
+						v.findViewById(R.id.overlay).animate().alpha(0f).setDuration(1000);
+					}
+
+					movieService.completedLevel(level.objectId);
+				}
 			}
+		}
+	}
+
+	public View getViewByPosition(int pos, ListView listView) {
+		final int firstListItemPosition = listView.getFirstVisiblePosition();
+		final int lastListItemPosition = firstListItemPosition + listView.getChildCount() - 1;
+
+		if (pos < firstListItemPosition || pos > lastListItemPosition ) {
+			return listView.getAdapter().getView(pos, null, listView);
+		} else {
+			final int childIndex = pos - firstListItemPosition;
+			return listView.getChildAt(childIndex);
 		}
 	}
 

@@ -20,10 +20,24 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 
 class LevelListImageAdapter extends BaseAdapter {
 	final private Context context;
-	final private List<Level> levels = new ArrayList<Level>();
+	final private List<LevelData> levels = new ArrayList<LevelData>();
 
 	private LayoutInflater inflater;
 	private DisplayImageOptions options;
+
+	static class LevelData {
+		public String name;
+		public String imageUrl;
+		public boolean isLocked;
+		public String objectId;
+
+		public LevelData(String name, String imageUrl, boolean isLocked, String objectId) {
+			this.name = name;
+			this.imageUrl = imageUrl;
+			this.isLocked = isLocked;
+			this.objectId = objectId;
+		}
+	}
 
 	LevelListImageAdapter(Context context) {
 		this.context = context;
@@ -61,12 +75,16 @@ class LevelListImageAdapter extends BaseAdapter {
 	}
 
 	public void add(final Level level) {
-		this.levels.add(level);
+		this.levels.add(new LevelData(level.name, level.imageUrl, level.isLocked, level.objectId));
 		notifyDataSetChanged();
 	}
 
 	public void addAll(final List<Level> levels) {
-		this.levels.addAll(levels);
+		ArrayList<LevelData> lvls = new ArrayList<LevelData>();
+		for (Level l : levels) {
+			lvls.add(new LevelData(l.name, l.imageUrl, l.isLocked, l.objectId));
+		}
+		this.levels.addAll(lvls);
 		notifyDataSetChanged();
 	}
 
@@ -76,29 +94,14 @@ class LevelListImageAdapter extends BaseAdapter {
 		View view = convertView;
 		if (view == null) {
 			view = inflater.inflate(R.layout.item_grid_image, parent, false);
-			holder = new ViewHolder();
-			holder.text = (TextView) view.findViewById(R.id.text);
-			Typeface font = ((MovieQuizApplication)context.getApplicationContext()).getRegularFont();
-			holder.text.setTypeface(font);
-			holder.image = (ImageView)view.findViewById(R.id.image);
+			holder = new ViewHolder(context, view);
 			view.setTag(holder);
 		} else {
 			holder = (ViewHolder) view.getTag();
 		}
 
-		Level l = (Level)getItem(position);
-
-		holder.text.setText(l.name);
-		ImageLoader.getInstance().displayImage(l.imageUrl, holder.image);
-
-		//		holder.text.setBackgroundColor(LevelGridImageAdapter.getRandomColor());
-
-		//		StateListDrawable states = new StateListDrawable();
-		//		states.addState(new int[] {android.R.attr.state_pressed},
-		//				new ColorDrawable(LevelGridImageAdapter.getRandomColor()) );
-		//		states.addState(new int[] { },
-		//				new ColorDrawable(Color.TRANSPARENT) );
-		//		view.setBackgroundDrawable(states);
+		LevelData l = (LevelData)getItem(position);
+		holder.populate(l);
 
 		return view;
 	}
@@ -110,8 +113,28 @@ class LevelListImageAdapter extends BaseAdapter {
 	}
 
 	static class ViewHolder {
+		final Context context;
+		View rootView;
 		TextView text;
 		int color;
 		ImageView image;
+		View overlay;
+
+		public ViewHolder(final Context context, final View rootView) {
+			this.context = context;
+			this.text = (TextView) rootView.findViewById(R.id.text);
+			Typeface font = ((MovieQuizApplication)context.getApplicationContext()).getRegularFont();
+			this.text.setTypeface(font);
+			this.image = (ImageView)rootView.findViewById(R.id.image);
+			overlay = (ViewGroup)rootView.findViewById(R.id.overlay);
+		}
+
+		public void populate(final LevelData l) {
+			this.text.setText(l.name);
+			this.image.setImageResource(android.R.color.transparent);
+			ImageLoader.getInstance().displayImage(l.imageUrl, this.image, 
+					((MovieQuizApplication)context.getApplicationContext()).getImageOptions());
+			overlay.setVisibility( l.isLocked ? View.VISIBLE : View.INVISIBLE );
+		}
 	}
 }

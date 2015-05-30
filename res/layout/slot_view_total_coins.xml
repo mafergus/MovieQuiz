@@ -18,7 +18,7 @@
         android:layout_centerInParent="true"
         android:background="@drawable/white_rectangle"
         android:tag="front"
-        android:text="UNLOCK"
+        android:text="HOME"
         android:textColor="@color/FlatBlue"
         android:textSize="@dimen/button_text_size" />
 

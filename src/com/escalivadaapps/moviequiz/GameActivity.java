@@ -26,7 +26,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.escalivadaapps.moviequiz.Question.Callback;
 import com.escalivadaapps.moviequiz.service.Level;
@@ -39,6 +38,8 @@ import com.escalivadaapps.moviequiz.views.GameOverSlotFourView;
 import com.escalivadaapps.moviequiz.views.GameOverSlotOneView;
 import com.escalivadaapps.moviequiz.views.GameOverSlotThreeView;
 import com.escalivadaapps.moviequiz.views.GameOverSlotTwoView;
+import com.escalivadaapps.moviequiz.views.LevelPassedSlotFour;
+import com.escalivadaapps.moviequiz.views.LevelPassedSlotOne;
 import com.fortysevendeg.swipelistview.BaseSwipeListViewListener;
 import com.fortysevendeg.swipelistview.SwipeListView;
 import com.nhaarman.listviewanimations.appearance.AnimationAdapter;
@@ -245,9 +246,9 @@ public class GameActivity extends Activity {
 							onQuestionIncorrect(position);
 						}
 					});
-					questionText.animate().setDuration(ROW_ANIM_DURATION).alpha(0f);
-					timer.animate().setDuration(ROW_ANIM_DURATION).alpha(0f);
 				}
+				questionText.animate().setDuration(ROW_ANIM_DURATION).alpha(0f);
+				timer.animate().setDuration(ROW_ANIM_DURATION).alpha(0f);
 			}
 			@Override
 			public void onClosed(int position, boolean fromRight) {}
@@ -420,6 +421,11 @@ public class GameActivity extends Activity {
 	public void showQuestionCorrectOverlay(int position, int score, int totalPoints) {
 		int correctRow = position;
 
+		int roundNum = NUM_QUESTIONS - questions.size() + 1;
+		questionText.setText("Round " + roundNum + "/" + NUM_QUESTIONS + " complete!");
+		questionText.animate().setDuration(ROW_ANIM_DURATION).alpha(1f);
+		//		timer.animate().setDuration(ROW_ANIM_DURATION).alpha(0f);
+
 		overlayAdapter.clear();
 		overlayAdapter.add(new CorrectAnswerSlotOneView(this, GameActivity.itemHeight));
 		overlayAdapter.add(new ImageRow(this, GameActivity.itemHeight, new ColorDrawable(getResources().getColor(R.color.FlatRed))));
@@ -444,7 +450,9 @@ public class GameActivity extends Activity {
 						public void onAnimationEnded() {
 							overlayList.closeOpenedItems();
 							overlayList.setVisibility(View.INVISIBLE);
-							loadQuestion(questions.get(0));							
+							loadQuestion(questions.get(0));	
+							questionText.animate().setDuration(ROW_ANIM_DURATION).alpha(1f);
+							timer.animate().setDuration(ROW_ANIM_DURATION).alpha(1f);
 						}
 					});
 					questionText.animate().setDuration(ROW_ANIM_DURATION).alpha(0f);
@@ -493,44 +501,70 @@ public class GameActivity extends Activity {
 				mp.start();
 
 				overlayList.closeOpenedItems();
-				questionText.setText(getString(R.string.level_passed));
+				questionText.setText(String.format(getString(R.string.level_passed), movieService.getLevelById(levelId).levelId));
 				questionText.animate().setDuration(ROW_ANIM_DURATION).alpha(1f);
 
 				overlayAdapter.clear();
-				overlayAdapter.add(new CorrectAnswerSlotOneView(GameActivity.this, GameActivity.itemHeight));
+				overlayAdapter.add(new LevelPassedSlotOne(GameActivity.this, GameActivity.itemHeight));
+				overlayAdapter.add(new GameOverSlotTwoView(GameActivity.this, GameActivity.itemHeight));
 				overlayAdapter.add(new ImageRow(GameActivity.this, GameActivity.itemHeight, new ColorDrawable(getResources().getColor(R.color.FlatRed))));
-				overlayAdapter.add(new ImageRow(GameActivity.this, GameActivity.itemHeight, new ColorDrawable(getResources().getColor(R.color.FlatBlue))));
-				overlayAdapter.add(new ImageRow(GameActivity.this, GameActivity.itemHeight, new ColorDrawable(getResources().getColor(R.color.FlatGreen))));
+				overlayAdapter.add(new LevelPassedSlotFour(GameActivity.this, GameActivity.itemHeight));
 
-				//				overlayList.setVisibility(View.VISIBLE);
+				overlayList.setVisibility(View.VISIBLE);
+				overlayList.setEnabled(true);
 				animOverlayAdapter = new SwingLeftInAnimationAdapter(overlayAdapter);
 				animOverlayAdapter.setAbsListView(overlayList);
 				overlayList.setAdapter(animOverlayAdapter);
 				overlayList.setSwipeListViewListener(new BaseSwipeListViewListener() {
 					@Override
 					public void onOpened(int position, boolean toRight) {
-						Intent result = new Intent();
-						result.putExtra("levelId", levelId);
-						setResult(RESULT_CODE_LEVEL_UNLOCKED);
-						finish();
-						overridePendingTransition(0, android.R.anim.fade_out);
+						Log.v("MNF", "onOpened");
+						
+						startListExitAnimation(overlayList, new AnimationCallback() {
+							
+							@Override
+							public void onAnimationEnded() {
+								Intent result = new Intent();
+								result.putExtra("levelId", levelId);
+								setResult(RESULT_CODE_LEVEL_UNLOCKED, result);
+								finish();
+								overridePendingTransition(0, android.R.anim.fade_out);
+							}
+						});
 					}
 					@Override
-					public void onClosed(int position, boolean fromRight) {}
+					public void onClosed(int position, boolean fromRight) {
+						Log.v("MNF", "onClosed");
+					}
 					@Override
-					public void onListChanged() { overlayList.closeOpenedItems();  }
+					public void onListChanged() {
+						Log.v("MNF", "onListChanged");
+						overlayList.closeOpenedItems(); 
+					}
 					@Override
-					public void onMove(int position, float x) {}
+					public void onMove(int position, float x) {
+						Log.v("MNF", "onMove");
+					}
 					@Override
-					public void onStartOpen(int position, int action, boolean right) {}
+					public void onStartOpen(int position, int action, boolean right) {
+						Log.v("MNF", "onStartOpen");
+					}
 					@Override
-					public void onStartClose(int position, boolean right) {}
+					public void onStartClose(int position, boolean right) {
+						Log.v("MNF", "onStartClose");
+					}
 					@Override
-					public void onClickFrontView(int position) {}
+					public void onClickFrontView(int position) {
+						Log.v("MNF", "onClickFrontView");
+					}
 					@Override
-					public void onClickBackView(int position) {}
+					public void onClickBackView(int position) {
+						Log.v("MNF", "onClickBackView");
+					}
 					@Override
-					public void onDismiss(int[] reverseSortedPositions) {}
+					public void onDismiss(int[] reverseSortedPositions) {
+						Log.v("MNF", "onDismiss");
+					}
 
 				});
 				overlayAdapter.notifyDataSetChanged();

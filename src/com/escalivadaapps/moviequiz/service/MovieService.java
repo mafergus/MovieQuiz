@@ -153,8 +153,12 @@ public class MovieService extends Service {
 		public void onLoad(final T obj);
 		public void onError();
 	}
+	
+	public interface LoadRequest {
+		public void load();
+	}
 
-	class LoadMovieRequest {
+	class LoadMovieRequest implements LoadRequest {
 		final private LoadCallback<Movie> callback;
 		final private ParseObject movieObj;
 		public LoadMovieRequest(final ParseObject movieObj, final LoadCallback<Movie> callback) {
@@ -185,7 +189,7 @@ public class MovieService extends Service {
 		}
 	}
 
-	class LoadLevelRequest {
+	class LoadLevelRequest implements LoadRequest {
 		final private LoadCallback<Level> callback;
 		final private ParseObject levelObj;
 		private int count = 0;
@@ -207,20 +211,42 @@ public class MovieService extends Service {
 					} else {
 						count = results.size();
 
-						List<MovieImageData> movieImageList = new ArrayList<MovieImageData>();
+						final List<MovieImageData> movieImageList = new ArrayList<MovieImageData>();
 						for (ParseObject movieImage : results) {
 							movieImageList.add(new MovieImageData(movieImage.getParseObject("parent").getString("title"), 
 									movieImage.getParseObject("parent").getInt("mdId"), 
 									movieImage.getString("url")));
 						}
 
-						final Level l = new Level(levelObj.getObjectId(), 
-								levelObj.getInt("levelNumber"), 
-								levelObj.getString("name"), 
-								movieImageList, 
-								levelObj.getBoolean("isRandom"),
-								levelObj.getString("imageUrl"));
-						callback.onLoad(l);
+						ParseQuery<ParseObject> levelUnlockedQuery = ParseQuery.getQuery("LevelUnlockedEvent");
+						levelUnlockedQuery.whereEqualTo("username", ParseUser.getCurrentUser().getUsername());
+						levelUnlockedQuery.whereEqualTo("levelObjectId", levelObj.getObjectId());
+						levelUnlockedQuery.findInBackground(new FindCallback<ParseObject>() {
+
+							@Override
+							public void done(List<ParseObject> list,
+									ParseException arg1) {
+								if (arg1 == null) {
+									boolean levelLocked = true;
+									if (levelObj.getBoolean("isLocked")) {
+										if (list.size() > 0) {
+											levelLocked = false;
+										}
+									} else {
+										levelLocked = false;
+									}
+									final Level l = new Level(levelObj.getObjectId(), 
+											levelObj.getInt("levelNumber"), 
+											levelObj.getString("name"), 
+											movieImageList, 
+											levelObj.getBoolean("isRandom"),
+											levelObj.getString("imageUrl"),
+											levelLocked);
+									callback.onLoad(l);
+								}
+							}
+						});
+
 					}
 				}
 			});
@@ -283,6 +309,21 @@ public class MovieService extends Service {
 				new Handler(Looper.getMainLooper()).postDelayed(this, LEVEL_UPDATED_INTERVAL);
 			}
 		});
+	}
+	
+	public void completedLevel(String objectId) {
+		int index = -1;
+		for (Level l : levels) {
+			if (l.objectId.equals(objectId)) {
+				index = levels.indexOf(l);
+			}
+		}
+		if ( (index != -1) && (index+1 < levels.size()) ) {
+			ParseObject unlockEvent = new ParseObject("LevelUnlockEvent");
+			unlockEvent.put("username", ParseUser.getCurrentUser().getUsername());
+			unlockEvent.put("levelObjectId", levels.get(index+1).objectId);
+			unlockEvent.saveInBackground();
+		}
 	}
 
 	private void sendLevelBroadcast() {

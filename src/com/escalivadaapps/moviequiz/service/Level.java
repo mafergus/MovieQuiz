@@ -17,6 +17,7 @@ final public class Level {
 	final public int levelId;
 	final public String name;
 	final public boolean isRandom;
+	final public boolean isLocked;
 	final public String imageUrl;
 	//	final public List<Movie> movies;
 	final public List<MovieImageData> movieImages;
@@ -34,7 +35,7 @@ final public class Level {
 			}
 		}
 	}
-	
+
 	final private class MoviePair {
 		@Override
 		public int hashCode() {
@@ -65,9 +66,9 @@ final public class Level {
 		private Level getOuterType() {
 			return Level.this;
 		}
-		
+
 	}
-	
+
 	public List<Movie> getMovieList() {
 		Map<MoviePair, List<String> > movieUrls = new HashMap<MoviePair, List<String> >();
 		for (MovieImageData mid : movieImages) {
@@ -79,7 +80,7 @@ final public class Level {
 			}
 			urls.add(mid.url);
 		}
-		
+
 		List<Movie> movies = new ArrayList<Movie>();
 		Set<MoviePair> keys = movieUrls.keySet();
 		for (MoviePair mp : keys) {
@@ -95,7 +96,8 @@ final public class Level {
 			@JsonProperty("name")String name, 
 			@JsonProperty("movieImages")final List<MovieImageData> movieImages,
 			@JsonProperty("isRandom")boolean isRandom,
-			@JsonProperty("imageUrl")String imageUrl) {
+			@JsonProperty("imageUrl")String imageUrl,
+			@JsonProperty("isLocked")boolean isLocked) {
 		this.objectId = objectId;
 		this.imageUrl = imageUrl;
 		this.levelId = levelId;
@@ -106,6 +108,7 @@ final public class Level {
 			this.movieImages = movieImages;
 		}
 		this.isRandom = isRandom;
+		this.isLocked = isLocked;
 	}
 
 	@Override
@@ -156,7 +159,7 @@ final public class Level {
 	@Override
 	public String toString() {
 		return "Level [objectId=" + objectId + ", levelId=" + levelId
-				+ ", name=" + name + ", isRandom=" + isRandom + ", imageUrl " + imageUrl + ", movies=" + Arrays.toString(movieImages.toArray()) + "]";
+				+ ", name=" + name + ", isRandom=" + isRandom + ", isLocked=" + isLocked + ", imageUrl " + imageUrl + ", movies=" + Arrays.toString(movieImages.toArray()) + "]";
 	}
 
 
